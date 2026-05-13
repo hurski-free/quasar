@@ -1,0 +1,1 @@
+export const PARTICLES_BUFFER_CAPACITY = 5_000_000;
