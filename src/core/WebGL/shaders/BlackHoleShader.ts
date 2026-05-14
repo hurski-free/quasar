@@ -7,7 +7,7 @@ uniform float u_distance;
 
 void main() {
   gl_Position = vec4(a_position.xy, 0.0, 1.0);
-  gl_PointSize = a_position.z * 2.0 / u_distance;
+  gl_PointSize = a_position.z * 2.6 / u_distance;
 }
 `;
 
@@ -18,7 +18,7 @@ out vec4 out_color;
 
 const float MIN_POINT_RADIUS = 0.375;
 const float MAX_POINT_RADIUS = 0.5;
-const float CORE_RADIUS = MAX_POINT_RADIUS / 1.2;
+const float CORE_RADIUS = MAX_POINT_RADIUS / 1.3;
 
 const vec3 BLACK_HOLE_HALO_COLOR = vec3(0.9921, 0.7647, 0.4941);
 
@@ -43,8 +43,13 @@ void main() {
 }
 `;
 
-export const blackHoleShader: IWebGLProgramConfig = {
+export type TBlackHoleShaderUniforms = 'u_distance';
+
+export const blackHoleShader: IWebGLProgramConfig<TBlackHoleShaderUniforms> = {
   name: 'BLACK_HOLE_SHADER',
   vertexShader,
   fragmentShader,
+  uniforms: {
+    u_distance: true,
+  },
 };

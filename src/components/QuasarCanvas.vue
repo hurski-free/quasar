@@ -10,10 +10,17 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Quasar } from '../core/Quasar';
 import { WebGL2dRender } from '../core/render/WebGL2Render';
 import { Engine } from '../core/engine/Engine';
+
+const props = defineProps<{
+  rotateX: number;
+  rotateY: number;
+  rotateZ: number;
+  distance: number;
+}>();
 
 const webgl2Supported = ref(false);
 
@@ -22,6 +29,19 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const quasarRef = ref<Quasar | null>(null);
 
 let resizeObserver: ResizeObserver | null = null;
+
+watch(() => props.rotateX, (newVal) => {
+  quasarRef.value?.rotateX(newVal);
+})
+watch(() => props.rotateY, (newVal) => {
+  quasarRef.value?.rotateY(newVal);
+})
+watch(() => props.rotateZ, (newVal) => {
+  quasarRef.value?.rotateZ(newVal);
+})
+watch(() => props.distance, (newVal) => {
+  quasarRef.value?.forward(newVal);
+})
 
 function applyCanvasSize() {
   const root = canvasContainerRef.value;
@@ -53,14 +73,17 @@ function init() {
 
   quasarRef.value?.stop()
   
-  const render = new WebGL2dRender({
-    ctx: gl,
-  })
+  const renderer = new WebGL2dRender({ ctx: gl })
   const engine = new Engine();
+  const quasar = new Quasar({ engine, renderer });
 
-  const quasar = new Quasar({
-    engine,
-    renderer: render,
+  quasar.prepareTransformation({
+    rotateX: props.rotateX,
+    rotateY: props.rotateY,
+    rotateZ: props.rotateZ,
+    distance: props.distance,
+    width: canvas.width,
+    height: canvas.height,
   });
 
   setTimeout(() => {

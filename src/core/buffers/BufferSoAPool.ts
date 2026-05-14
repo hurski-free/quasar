@@ -7,11 +7,6 @@ interface IBufferConstructor<T extends TPossibleTypes> {
    */
   name: string;
 
-  /**
-   * Number of elements in buffer
-   */
-  countElements: number;
-
   valuesPerElement: number;
   typedConstructor: new (buffer: ArrayBufferLike) => T;
 }
@@ -78,14 +73,14 @@ export class BufferSoAPool {
   }
 
   createArrayBuffer<T extends TPossibleTypes>(buf: IBufferConstructor<T>) {
-    const buffer = new ArrayBuffer(buf.countElements * buf.valuesPerElement * getBytesPerArrayType(buf.typedConstructor));
+    const buffer = new ArrayBuffer(this._capacity * buf.valuesPerElement * getBytesPerArrayType(buf.typedConstructor));
     const typedBuffer = new buf.typedConstructor(buffer);
 
     this.pushBuffer(buffer, typedBuffer, buf);
   }
 
   createSharedBuffer<T extends TPossibleTypes>(buf: IBufferConstructor<T>) {
-    const buffer = new SharedArrayBuffer(buf.countElements * buf.valuesPerElement * getBytesPerArrayType(buf.typedConstructor));
+    const buffer = new SharedArrayBuffer(this._capacity * buf.valuesPerElement * getBytesPerArrayType(buf.typedConstructor));
     const typedBuffer = new buf.typedConstructor(buffer);
 
     this.pushBuffer(buffer, typedBuffer, buf);

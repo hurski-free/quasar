@@ -45,8 +45,14 @@ void main() {
 }
 `;
 
-export const starShader: IWebGLProgramConfig = {
+export type TStarShaderUniforms = 'u_camera' | 'u_projection';
+
+export const starShader: IWebGLProgramConfig<TStarShaderUniforms> = {
   name: 'STAR_SHADER',
   vertexShader,
   fragmentShader,
+  uniforms: {
+    u_camera: true,
+    u_projection: true,
+  },
 };

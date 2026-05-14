@@ -4,7 +4,7 @@ import Main from './components/Main.vue'
 
 <template>
   <div class="app-root">
-    <Main style="z-index: 1000;" />
+    <Main />
     <footer class="dev-contact-badge" style="z-index: 900;">
       <span class="dev-contact-label">Developer contact</span>
       <a class="dev-contact-mail" href="mailto:hurski.free@gmail.com">hurski.free@gmail.com</a>
@@ -19,9 +19,7 @@ import Main from './components/Main.vue'
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 0.5rem;
   box-sizing: border-box;
-  gap: 1rem;
 }
 
 .dev-contact-badge {

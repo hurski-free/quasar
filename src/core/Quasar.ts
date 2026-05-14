@@ -1,8 +1,8 @@
 import { PARTICLES_BUFFER_CAPACITY } from "./buffers.const";
 import { BufferSoAPool } from "./buffers/BufferSoAPool";
 import type { IEngine } from "./engine/IEngine";
-import type { ITransformation } from "./math/ITransformation";
-import { getProjectionMatrix, getTransformationMatrix } from "./math/math";
+import type { ITransformation, ITransformationData } from "./math/ITransformation";
+import { clamp, DEGR_TO_RAD, getProjectionMatrix, getRotationX, getRotationY, getRotationZ, getTransformationMatrix, PI_MUL_TWO } from "./math/math";
 import type { IRender } from "./render/IRender";
 
 /**
@@ -25,6 +25,9 @@ export class Quasar {
   private engine: IEngine;
   private renderer: IRender;
 
+  /**
+   * Array[0] GPU DATA [radius, angle, z, size, colorR, colorG, colorB]
+   */
   private _particlesPool: BufferSoAPool;
   private _blackHoleRadius: number = 0;
 
@@ -49,6 +52,11 @@ export class Quasar {
     this.renderer.bindMainClass(this);
 
     this._particlesPool = new BufferSoAPool(PARTICLES_BUFFER_CAPACITY);
+    this._particlesPool.createArrayBuffer({
+      name: 'particlesGPU',
+      valuesPerElement: 7,
+      typedConstructor: Float32Array,
+    });
 
     this._transformation = {
       distance: 1,
@@ -60,6 +68,9 @@ export class Quasar {
     };
   }
 
+  /**
+   * Array[0] GPU DATA [radius, angle, z, size, colorR, colorG, colorB]
+   */
   get particlesPool() {
     return this._particlesPool;
   }
@@ -76,11 +87,13 @@ export class Quasar {
     return this._animationState;
   }
 
+  /* CYCLE CONTROL */
+
   start() {
     if (this._animationState === 0) {
       this._animationState = 1;
 
-      this._blackHoleRadius = 50;
+      this._blackHoleRadius = 30;
       this.renderer.setupDrawData();
 
       this.tick(performance.now());
@@ -133,16 +146,72 @@ export class Quasar {
     this.start();
   }
 
-  resizeCanvas(width: number, height: number) {
-    this._transformation.mProjection = getProjectionMatrix(width, height, width + height);
-    this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
+  /* TRANSFORMATION */
 
-    this.renderer.resize(width, height);
+  rotateX(value: number, updateTransformation = true) {
+    const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateX = getRotationX(rad);
 
-    if (this._animationState === 2) {
+    if (updateTransformation) {
+      this.updateTransformation();
+    }
+  }
+
+  rotateY(value: number, updateTransformation = true) {
+    const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateY = getRotationY(rad);
+
+    if (updateTransformation) {
+      this.updateTransformation();
+    }
+  }
+
+  rotateZ(value: number, updateTransformation = true) {
+    const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateZ = getRotationZ(rad);
+
+    if (updateTransformation) {
+      this.updateTransformation();
+    }
+  }
+
+  forward(value: number) {
+    this._transformation.distance = value;
+
+    if (this._animationState === 1) {
       this.renderer.render();
     }
   }
+
+  prepareTransformation(data: ITransformationData) {
+    const radX = clamp(data.rotateX * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateX = getRotationX(radX);
+    const radY = clamp(data.rotateY * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateY = getRotationY(radY);
+    const radZ = clamp(data.rotateZ * DEGR_TO_RAD, 0, PI_MUL_TWO);
+    this._transformation.mRotateZ = getRotationZ(radZ);
+
+    this._transformation.distance = data.distance;
+
+    this._transformation.mProjection = getProjectionMatrix(data.width, data.height, data.width + data.height);
+    this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
+  }
+
+  resizeCanvas(width: number, height: number) {
+    this._transformation.mProjection = getProjectionMatrix(width, height, width + height);
+    this.renderer.resize(width, height);
+    this.updateTransformation();
+  }
+
+  private updateTransformation() {
+    this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
+
+    if (this._animationState === 1) {
+      this.renderer.render();
+    }
+  }
+
+  /* MEMORY MANAGEMENT */
 
   private clearObjects() {
     this._particlesPool.clearObjects();

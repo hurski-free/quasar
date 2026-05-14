@@ -26,3 +26,12 @@ export interface ITransformation {
    */
   mTransform: number[];
 }
+
+export interface ITransformationData {
+  rotateX: number;
+  rotateY: number;
+  rotateZ: number;
+  distance: number;
+  width: number;
+  height: number;
+}
