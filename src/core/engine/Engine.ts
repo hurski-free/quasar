@@ -17,6 +17,9 @@ export class Engine implements IEngine {
   private particlesFlagsData!: Int32Array;
 
   process(): void {
+    void this.particlesCpuData;
+    void this.particlesFlagsData;
+
     const data = this.particlesGpuData;
     const count = this.quasarRef.particlesPool.activeCount;
     const radiusStep = this.radiusStep;
