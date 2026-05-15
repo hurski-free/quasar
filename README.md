@@ -6,4 +6,4 @@ Space simulation with typo commands
 
 | Environment | URL |
 |-------------|-----|
-| **Production** | [https://black-hole.onrender.com/](https://black-hole.onrender.com/) |
+| **Production** | [https://quasar-ckd7.onrender.com](https://quasar-ckd7.onrender.com) |
