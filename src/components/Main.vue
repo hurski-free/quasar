@@ -7,8 +7,20 @@ import QButton from './atoms/QButton.vue';
 import ConfigDialog from './ConfigDialog.vue';
 
 import settingsIconUrl from '../assets/settings.svg';
+import consoleIconUrl from '../assets/console.svg';
+import playIconUrl from '../assets/play.svg';
+import pauseIconUrl from '../assets/pause.svg';
 
-import { INIT_ANGLE_X, INIT_ANGLE_Y, INIT_ANGLE_Z } from '../core/quasar.const';
+import {
+  BLACK_HOLE_DIAMETER_DEF,
+  INIT_ANGLE_X,
+  INIT_ANGLE_Y,
+  INIT_ANGLE_Z,
+  MODEL_RADIUS_DEF,
+  PARTICLE_MOVE_ANGLE_DEF,
+  PARTICLE_MOVE_RADIUS_DEF,
+} from '../core/quasar.const';
+import type { IQuasarModelConfig } from '../core/quasar.conf';
 
 const rotateX = ref(INIT_ANGLE_X);
 const rotateY = ref(INIT_ANGLE_Y);
@@ -17,19 +29,48 @@ const distance = ref(1);
 
 const isPanelOpen = ref(true);
 const isConfigDialogOpen = ref(false);
+const isStatsOpen = ref(false);
+const isPlaying = ref(true);
+
+const quasarCanvasRef = ref<InstanceType<typeof QuasarCanvas> | null>(null);
+
+const modelConfig = ref<IQuasarModelConfig>({
+  angleStep: PARTICLE_MOVE_ANGLE_DEF,
+  radiusStep: PARTICLE_MOVE_RADIUS_DEF,
+  modelRadius: MODEL_RADIUS_DEF,
+  blackHoleDiameter: BLACK_HOLE_DIAMETER_DEF,
+  arms: [],
+});
 
 const panelBtn = computed(() => {
   return isPanelOpen.value ? 'Hide panel' : 'Show panel';
 });
 
+const statsBtn = computed(() => {
+  return isStatsOpen.value ? 'Hide stats' : 'Show stats';
+});
+
+const playPauseIconUrl = computed(() => {
+  return isPlaying.value ? pauseIconUrl : playIconUrl;
+});
+
+function togglePlayPause() {
+  const isRunning = quasarCanvasRef.value?.togglePauseResume();
+  if (isRunning !== undefined) {
+    isPlaying.value = isRunning;
+  }
+}
+
 </script>
 
 <template>
   <div>
-    <div class="left-panel">
+    <div class="left-panel" :class="{ 'left-panel--hidden': !isPanelOpen }">
       <div class="control-panel">
         <QButton @click="isPanelOpen = !isPanelOpen">{{ panelBtn }}</QButton>
+        <QButton :icon-left="consoleIconUrl" @click="isStatsOpen = !isStatsOpen">{{ statsBtn }}</QButton>
         <QButton :icon-left="settingsIconUrl" @click="isConfigDialogOpen = !isConfigDialogOpen"></QButton>
+        <QButton :icon-left="playPauseIconUrl" @click="togglePlayPause"></QButton>
       </div>
       <ConfigPanel
         v-if="isPanelOpen"
@@ -43,9 +84,18 @@ const panelBtn = computed(() => {
         @update:distance="distance = $event"
       />
     </div>
-    <QuasarCanvas class="quasar-canvas" :rotateX="rotateX" :rotateY="rotateY" :rotateZ="rotateZ" :distance="distance" />
+    <QuasarCanvas
+      ref="quasarCanvasRef"
+      class="quasar-canvas"
+      :rotateX="rotateX"
+      :rotateY="rotateY"
+      :rotateZ="rotateZ"
+      :distance="distance"
+      :modelConfig="modelConfig"
+      :showStats="isStatsOpen"
+    />
 
-    <ConfigDialog v-model="isConfigDialogOpen" />
+    <ConfigDialog v-model="isConfigDialogOpen" v-model:modelConfig="modelConfig" />
   </div>
 </template>
 
@@ -56,13 +106,18 @@ const panelBtn = computed(() => {
   left: 0;
   height: 100%;
   z-index: 1100;
-  width: 350px;
+  width: 400px;
   background-color: color-mix(in srgb, var(--surface) 50%, transparent);
+}
+
+.left-panel--hidden {
+  height: auto!important;
 }
 
 .control-panel {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
+  gap: 0.5rem;
   padding: 0.5rem;
 }
 

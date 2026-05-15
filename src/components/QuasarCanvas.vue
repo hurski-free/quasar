@@ -1,25 +1,20 @@
-<template>
-  <div>
-    <div ref="canvasContainerRef" class="canvas-container">
-      <canvas ref="canvasRef" />
-    </div>
-    <div v-if="!webgl2Supported" class="webgl2-not-supported">
-      <p>WebGL2 is not supported</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Quasar } from '../core/Quasar';
 import { WebGL2dRender } from '../core/render/WebGL2Render';
 import { Engine } from '../core/engine/Engine';
+import type { IQuasarModelConfig } from '../core/quasar.conf';
+import { PARTICLES_GPU_VALUES_PER_ELEMENT } from '../core/buffers.const';
 
 const props = defineProps<{
   rotateX: number;
   rotateY: number;
   rotateZ: number;
   distance: number;
+
+  modelConfig: IQuasarModelConfig;
+
+  showStats: boolean;
 }>();
 
 const webgl2Supported = ref(false);
@@ -29,19 +24,33 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const quasarRef = ref<Quasar | null>(null);
 
 let resizeObserver: ResizeObserver | null = null;
+let initTimeoutId: ReturnType<typeof setTimeout> | undefined;
+
+const particlesCount = computed(() => {
+  return quasarRef.value?.particlesPool.activeCount || 0;
+});
+
+const verticesCount = computed(() => {
+  return (quasarRef.value?.particlesPool.activeCount || 0) * PARTICLES_GPU_VALUES_PER_ELEMENT;
+});
 
 watch(() => props.rotateX, (newVal) => {
   quasarRef.value?.rotateX(newVal);
-})
+});
 watch(() => props.rotateY, (newVal) => {
   quasarRef.value?.rotateY(newVal);
-})
+});
 watch(() => props.rotateZ, (newVal) => {
   quasarRef.value?.rotateZ(newVal);
-})
+});
 watch(() => props.distance, (newVal) => {
   quasarRef.value?.forward(newVal);
-})
+});
+watch(() => props.modelConfig, (newVal) => {
+  console.log('modelConfig', newVal);
+  quasarRef.value?.setModelConfig(newVal);
+  restartQuasar();
+});
 
 function applyCanvasSize() {
   const root = canvasContainerRef.value;
@@ -71,11 +80,18 @@ function init() {
     return;
   }
 
-  quasarRef.value?.stop()
-  
+  if (initTimeoutId !== undefined) {
+    clearTimeout(initTimeoutId);
+    initTimeoutId = undefined;
+  }
+
+  teardownQuasar();
+
   const renderer = new WebGL2dRender({ ctx: gl })
   const engine = new Engine();
   const quasar = new Quasar({ engine, renderer });
+
+  quasar.setModelConfig(props.modelConfig);
 
   quasar.prepareTransformation({
     rotateX: props.rotateX,
@@ -86,33 +102,26 @@ function init() {
     height: canvas.height,
   });
 
-  setTimeout(() => {
+  initTimeoutId = setTimeout(() => {
+    initTimeoutId = undefined;
     quasarRef.value = quasar;
     quasar.resizeCanvas(canvas.width, canvas.height);
     quasar.start();
   }, 100);
 }
 
-function togglePauseResume() {
+/** @returns whether the simulation is running after the toggle */
+function togglePauseResume(): boolean | undefined {
   const quasar = quasarRef.value;
-  if (!quasar) return;
+  if (!quasar) return undefined;
 
   if (quasar.animationState === 1) {
     quasar.pause();
   } else if (quasar.animationState === 2) {
     quasar.resume();
   }
-}
 
-function toggleStartStop() {
-  const quasar = quasarRef.value;
-  if (!quasar) return;
-
-  if (quasar.animationState === 0) {
-    quasar.start();
-  } else {
-    quasar.stop();
-  }
+  return quasar.animationState === 1;
 }
 
 function restartQuasar() {
@@ -121,6 +130,7 @@ function restartQuasar() {
 
 function teardownQuasar() {
   quasarRef.value?.stop();
+  quasarRef.value?.dispose();
   quasarRef.value = null;
 }
 
@@ -139,14 +149,44 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (initTimeoutId !== undefined) {
+    clearTimeout(initTimeoutId);
+    initTimeoutId = undefined;
+  }
+
   resizeObserver?.disconnect();
   resizeObserver = null;
   teardownQuasar();
 })
+
+defineExpose({
+  togglePauseResume,
+});
 </script>
 
-<style scoped>
+<template>
+  <div>
+    <div ref="canvasContainerRef" class="canvas-container">
+      <canvas ref="canvasRef" />
+    </div>
+    <div v-if="!webgl2Supported" class="webgl2-not-supported">
+      <p>WebGL2 is not supported</p>
+    </div>
 
+    <div v-if="showStats" class="model-stats">
+      <div class="model-stats__item">
+        <span>Particles count: </span>
+        <span>{{ particlesCount }}</span>
+      </div>
+      <div class="model-stats__item">
+        <span>Count values for draw: </span>
+        <span>{{ verticesCount }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
 .canvas-container {
   position: fixed;
   width: 100vw;
@@ -160,5 +200,14 @@ onBeforeUnmount(() => {
   align-items: center;
   height: 100vh;
   width: 100vw;
+}
+
+.model-stats {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  right: 0;
+  gap: 0.5rem;
+  padding: 0.5rem;
 }
 </style>

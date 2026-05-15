@@ -1,13 +1,13 @@
 import type { IWebGLProgramConfig } from "../WebGLProgram";
 
 const vertexShader = `#version 300 es
-// [radius, angle, z, size]
+// [polarR, polarAngle, z, diameter]
 layout(location = 0) in vec4 a_position;
 layout(location = 1) in vec3 a_color;
 
 uniform mat4 u_transform;
 uniform float u_distance;
-uniform float u_max_h;
+uniform float u_radius;
 
 out vec4 v_color;
 
@@ -16,9 +16,9 @@ void main() {
   float x = a_position.x * cos(a_position.y);
   float y = a_position.x * sin(a_position.y);
 
-  gl_Position = u_transform * vec4(x, y, a_position.z, u_distance);
+  gl_Position = u_transform * vec4(x, y, a_position.z * a_position.x / u_radius, u_distance);
 
-  gl_PointSize = a_position.w * 2.0 / u_distance;
+  gl_PointSize = a_position.w / u_distance;
 
   float z = a_position.z;
 
@@ -26,7 +26,8 @@ void main() {
     z = -a_position.z;
   }
 
-  v_color = vec4(a_color, 1.0) * (1.0 - pow(z / u_max_h, 3.0));
+  // v_color = vec4(a_color, 1.0) * pow(1.0 - a_position.x / u_radius, 0.5);
+  v_color = vec4(a_color, 1.0);
 }
 `;
 
@@ -47,7 +48,7 @@ void main() {
 }
 `;
 
-export type TParticleShaderUniforms = 'u_transform' | 'u_distance' | 'u_max_h' | 'u_light';
+export type TParticleShaderUniforms = 'u_transform' | 'u_distance' | 'u_radius' | 'u_light';
 
 export const particleShader: IWebGLProgramConfig<TParticleShaderUniforms> = {
   name: 'PARTICLE_SHADER',
@@ -56,7 +57,7 @@ export const particleShader: IWebGLProgramConfig<TParticleShaderUniforms> = {
   uniforms: {
     u_transform: true,
     u_distance: true,
-    u_max_h: true,
+    u_radius: true,
     u_light: true,
   },
 };

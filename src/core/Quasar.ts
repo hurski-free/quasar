@@ -1,8 +1,9 @@
-import { PARTICLES_BUFFER_CAPACITY } from "./buffers.const";
+import { PARTICLES_BUFFER_CAPACITY, PARTICLES_BUFFER_CPU_ID, PARTICLES_BUFFER_FLAGS_ID, PARTICLES_BUFFER_GPU_ID, PARTICLES_GPU_VALUES_PER_ELEMENT } from "./buffers.const";
 import { BufferSoAPool } from "./buffers/BufferSoAPool";
 import type { IEngine } from "./engine/IEngine";
 import type { ITransformation, ITransformationData } from "./math/ITransformation";
 import { clamp, DEGR_TO_RAD, getProjectionMatrix, getRotationX, getRotationY, getRotationZ, getTransformationMatrix, PI_MUL_TWO } from "./math/math";
+import type { IQuasarModelConfig } from "./quasar.conf";
 import type { IRender } from "./render/IRender";
 
 /**
@@ -26,10 +27,9 @@ export class Quasar {
   private renderer: IRender;
 
   /**
-   * Array[0] GPU DATA [radius, angle, z, size, colorR, colorG, colorB]
+   * @see particlesPool
    */
   private _particlesPool: BufferSoAPool;
-  private _blackHoleRadius: number = 0;
 
   /**
    * States:
@@ -42,20 +42,35 @@ export class Quasar {
    */
   private _animationState: TGameState = 0;
   private _animationFrameId: number = 0;
+  /** Bumped on pause/stop so in-flight tick callbacks cannot schedule another frame. */
+  private _tickGeneration = 0;
   private _prevTimestamp: DOMHighResTimeStamp = 0;
 
   private _transformation: ITransformation;
 
+  private _modelConfig!: IQuasarModelConfig;
+
   constructor(cfg: IQuasarConfig) {
     this.engine = cfg.engine;
+    this.engine.bindMainClass(this);
     this.renderer = cfg.renderer;
     this.renderer.bindMainClass(this);
 
     this._particlesPool = new BufferSoAPool(PARTICLES_BUFFER_CAPACITY);
     this._particlesPool.createArrayBuffer({
-      name: 'particlesGPU',
-      valuesPerElement: 7,
+      name: PARTICLES_BUFFER_CPU_ID,
+      valuesPerElement: 1,
       typedConstructor: Float32Array,
+    });
+    this._particlesPool.createArrayBuffer({
+      name: PARTICLES_BUFFER_GPU_ID,
+      valuesPerElement: PARTICLES_GPU_VALUES_PER_ELEMENT,
+      typedConstructor: Float32Array,
+    });
+    this._particlesPool.createArrayBuffer({
+      name: PARTICLES_BUFFER_FLAGS_ID,
+      valuesPerElement: 1,
+      typedConstructor: Int32Array,
     });
 
     this._transformation = {
@@ -69,14 +84,14 @@ export class Quasar {
   }
 
   /**
-   * Array[0] GPU DATA [radius, angle, z, size, colorR, colorG, colorB]
+   * Array[0] CPU DATA []
+   *
+   * Array[1] GPU DATA [polarR, polarAngle, z, diameter, colorR, colorG, colorB]
+   *
+   * Array[2] GPU DATA [armIndex]
    */
   get particlesPool() {
     return this._particlesPool;
-  }
-
-  get blackHoleRadius() {
-    return this._blackHoleRadius;
   }
 
   get transformation(): ITransformation {
@@ -87,38 +102,48 @@ export class Quasar {
     return this._animationState;
   }
 
+  get modelConfig(): Readonly<IQuasarModelConfig> {
+    return this._modelConfig;
+  }
+
   /* CYCLE CONTROL */
 
   start() {
     if (this._animationState === 0) {
       this._animationState = 1;
 
-      this._blackHoleRadius = 30;
+      this.engine.initializeData();
       this.renderer.setupDrawData();
 
-      this.tick(performance.now());
+      this._prevTimestamp = performance.now();
+      this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
   }
 
   tick(now: DOMHighResTimeStamp) {
-    if (this._animationState === 1) {
-      const deltaTime = now - this._prevTimestamp;
-      this._prevTimestamp = now;
+    const generation = this._tickGeneration;
 
-      if (deltaTime > 200) {
-        // ignore cycle
-        this._animationFrameId = requestAnimationFrame((now) => this.tick(now));
-      } else {
-        this.engine.process();
-        this.renderer.render();
-        this._animationFrameId = requestAnimationFrame((now) => this.tick(now));
-      }
+    if (this._animationState !== 1 || generation !== this._tickGeneration) {
+      return;
+    }
+
+    const deltaTime = now - this._prevTimestamp;
+    this._prevTimestamp = now;
+
+    if (deltaTime <= 200) {
+      this.engine.process();
+      this.renderer.render();
+    }
+
+    if (this._animationState === 1 && generation === this._tickGeneration) {
+      this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
   }
 
   pause() {
     if (this._animationState === 1) {
       this._animationState = 2;
+      this._tickGeneration++;
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = 0;
     }
@@ -127,13 +152,15 @@ export class Quasar {
   resume() {
     if (this._animationState === 2) {
       this._animationState = 1;
-      this.tick(performance.now());
+      this._prevTimestamp = performance.now();
+      this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
   }
 
   stop() {
     if (this._animationState !== 0) {
       this._animationState = 0;
+      this._tickGeneration++;
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = 0;
       this.clearObjects();
@@ -193,7 +220,7 @@ export class Quasar {
 
     this._transformation.distance = data.distance;
 
-    this._transformation.mProjection = getProjectionMatrix(data.width, data.height, data.width + data.height);
+    this._transformation.mProjection = getProjectionMatrix(data.width, data.height, (data.width + data.height) * 2);
     this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
   }
 
@@ -206,9 +233,15 @@ export class Quasar {
   private updateTransformation() {
     this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
 
-    if (this._animationState === 1) {
+    if (this._animationState === 2) {
       this.renderer.render();
     }
+  }
+
+  /* MODEL CONFIG MANAGMENT */
+
+  setModelConfig(config: IQuasarModelConfig) {
+    this._modelConfig = config;
   }
 
   /* MEMORY MANAGEMENT */
@@ -218,6 +251,7 @@ export class Quasar {
   }
 
   dispose() {
+    this.stop();
     this._particlesPool.freeMemory();
   }
 }

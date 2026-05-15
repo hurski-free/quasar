@@ -2,18 +2,33 @@
 import { onMounted, ref } from 'vue';
 import Range from './atoms/Range.vue';
 import QDialog from './dialog/QDialog.vue';
-import { getQuasarConfigurationProperties } from '../core/quasar.conf';
+import { getQuasarConfigurationProperties, type IQuasarModelConfig } from '../core/quasar.conf';
 import { createRangePropertyRef, fillRangePropertyRef } from '../utils/config.ref';
 import QButton from './atoms/QButton.vue';
+
+const props = defineProps<{
+  modelConfig: IQuasarModelConfig;
+}>();
 
 const isOpen = ref(false);
 const dialogRef = ref<InstanceType<typeof QDialog> | null>(null);
 
 const angleStep = createRangePropertyRef();
 const radiusStep = createRangePropertyRef();
+const modelRadius = createRangePropertyRef();
+const blackHoleDiameter = createRangePropertyRef();
+
+const emit = defineEmits<{
+  (e: 'update:modelConfig', value: IQuasarModelConfig): void;
+}>();
 
 function save() {
-  console.log('save');
+  emit('update:modelConfig', {
+    angleStep: angleStep.value.value,
+    radiusStep: radiusStep.value.value,
+    modelRadius: modelRadius.value.value,
+    blackHoleDiameter: blackHoleDiameter.value.value,
+  });
   dialogRef.value?.close();
 }
 
@@ -25,6 +40,8 @@ onMounted(() => {
   const cfg = getQuasarConfigurationProperties();
   fillRangePropertyRef(angleStep, cfg.angleStep);
   fillRangePropertyRef(radiusStep, cfg.radiusStep);
+  fillRangePropertyRef(modelRadius, cfg.modelRadius);
+  fillRangePropertyRef(blackHoleDiameter, cfg.blackHoleDiameter);
 });
 </script>
 
@@ -36,6 +53,12 @@ onMounted(() => {
       </div>
       <div class="dynamic-config-panel__range-item">
         <Range v-model="radiusStep.value" label="Radius step" :min="radiusStep.min" :max="radiusStep.max" :step="radiusStep.step" />
+      </div>
+      <div class="dynamic-config-panel__range-item">
+        <Range v-model="modelRadius.value" label="Model radius" :min="modelRadius.min" :max="modelRadius.max" :step="modelRadius.step" />
+      </div>
+      <div class="dynamic-config-panel__range-item">
+        <Range v-model="blackHoleDiameter.value" label="Black hole diameter" :min="blackHoleDiameter.min" :max="blackHoleDiameter.max" :step="blackHoleDiameter.step" />
       </div>
 
       <div class="dynamic-config-panel__actions">
