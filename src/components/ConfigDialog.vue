@@ -28,6 +28,7 @@ function save() {
     radiusStep: radiusStep.value.value,
     modelRadius: modelRadius.value.value,
     blackHoleDiameter: blackHoleDiameter.value.value,
+    arms: [],
   });
   dialogRef.value?.close();
 }
