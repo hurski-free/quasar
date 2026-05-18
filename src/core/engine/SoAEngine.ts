@@ -1,4 +1,4 @@
-import { PI_MUL_TWO, random, vecMulValue, vecSumVec } from "../math/math";
+import { random } from "../math/math";
 import type { IQuasarArmConfig } from "../quasar.conf";
 import { PARTICLE_DIAMETER_MAX_DEF, PARTICLE_DIAMETER_MIN_DEF, QUANTITY_EL_GENERATE } from "../quasar.const";
 import type { ImmutableSession } from "../Session";

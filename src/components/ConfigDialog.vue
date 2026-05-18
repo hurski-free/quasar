@@ -28,7 +28,7 @@ const idPrefix = useId();
 const armCounter = ref(0);
 const arms = ref<QuasarArmRef[]>([]);
 const importInputRef = ref<HTMLInputElement | null>(null);
-const previewCanvasRef = ref<HTMLCanvasElement | null>(null);
+// const previewCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const emit = defineEmits<{
   (e: 'update:modelConfig', value: IQuasarModelConfig): void;
