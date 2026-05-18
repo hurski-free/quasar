@@ -1,17 +1,17 @@
 import { PARTICLES_BUFFER_GPU_ID } from "../buffers.const";
-import type { Quasar } from "../Quasar";
+import type { ImmutableFrameView } from "../FrameView";
+import type { ImmutableSession } from "../Session";
 import { blackHoleShader, type TBlackHoleShaderUniforms } from "../WebGL/shaders/BlackHoleShader";
 import { particleShader, type TParticleShaderUniforms } from "../WebGL/shaders/ParticleShader";
 import { GLProgram } from "../WebGL/WebGLProgram";
+import type { SoAWorld } from "../world/SoAWorld";
 import type { IRender } from "./IRender";
 
 export interface IWebGLRenderConfig {
   ctx: WebGL2RenderingContext;
 }
 
-export class WebGL2dRender implements IRender {
-  private quasarRef!: Quasar;
-
+export class SoAWebGL2Render implements IRender<SoAWorld> {
   private _gl: WebGL2RenderingContext;
 
   private particlesShader: GLProgram<TParticleShaderUniforms>;
@@ -61,63 +61,57 @@ export class WebGL2dRender implements IRender {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
-  render(): void {
+  render(world: SoAWorld, frameView: ImmutableFrameView, session: ImmutableSession): void {
     const gl = this._gl;
-    const transformation = this.quasarRef.transformation;
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Draw particles
-
     
-    if (this.quasarRef.particlesPool.activeCount > 0) {
+    if (world.particlesPool.activeCount > 0) {
       gl.useProgram(this.particlesShader.program);
       gl.uniform1f(this.particlesShader.uniforms.u_light, 1.0);
-      gl.uniformMatrix4fv(this.particlesShader.uniforms.u_transform, false, transformation.mTransform);
-      gl.uniform1f(this.particlesShader.uniforms.u_distance, transformation.distance);
-      gl.uniform1f(this.particlesShader.uniforms.u_radius, this.quasarRef.modelConfig.modelRadius);
+      gl.uniformMatrix4fv(this.particlesShader.uniforms.u_transform, false, frameView.mTransform);
+      gl.uniform1f(this.particlesShader.uniforms.u_distance, frameView.distance);
+      gl.uniform1f(this.particlesShader.uniforms.u_radius, session.modelConfig.modelRadius);
 
       gl.bindVertexArray(this.particlesVAO);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.particlesVBO);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.particlesBufferData.subarray(0, this.quasarRef.particlesPool.activeCount * 7));
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.particlesBufferData.subarray(0, world.particlesPool.activeCount * 7));
 
-      gl.drawArrays(gl.POINTS, 0, this.quasarRef.particlesPool.activeCount);
+      gl.drawArrays(gl.POINTS, 0, world.particlesPool.activeCount);
     }
 
     // Draw black hole
     
     gl.useProgram(this.blackHoleShader.program);
-    gl.uniform1f(this.blackHoleShader.uniforms.u_distance, transformation.distance);
+    gl.uniform1f(this.blackHoleShader.uniforms.u_distance, frameView.distance);
     
     gl.bindVertexArray(this.blackHoleVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.blackHoleVBO);
     gl.drawArrays(gl.POINTS, 0, 1);
   }
 
-  resize(width: number, height: number): void {
-    this._gl.viewport(0, 0, width, height);
+  resize(frameView: ImmutableFrameView): void {
+    this._gl.viewport(0, 0, frameView.width, frameView.height);
   }
 
-  bindMainClass(ref: Quasar): void {
-    this.quasarRef = ref;
-  }
-
-  setupDrawData(): void {
+  setupDrawData(world: SoAWorld, session: ImmutableSession): void {
     const gl = this._gl;
 
-    this.blackHoleBufferData[2] = this.quasarRef.modelConfig.blackHoleDiameter;
+    this.blackHoleBufferData[2] = session.modelConfig.blackHoleDiameter;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.blackHoleVBO);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.blackHoleBufferData.subarray(0, 3));
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    this.particlesBufferData = this.quasarRef.particlesPool.getTypedArray(PARTICLES_BUFFER_GPU_ID);
+    this.particlesBufferData = world.particlesPool.getTypedArray(PARTICLES_BUFFER_GPU_ID);
 
-    if (this.quasarRef.particlesPool.activeCount > 0) {
+    if (world.particlesPool.activeCount > 0) {
       gl.bindVertexArray(this.particlesVAO);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.particlesVBO);
-      gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * 7 * this.quasarRef.particlesPool.activeCount, gl.DYNAMIC_DRAW);
+      gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * 7 * world.particlesPool.activeCount, gl.DYNAMIC_DRAW);
 
       gl.vertexAttribPointer(0, 4, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 7, 0);
       gl.enableVertexAttribArray(0);

@@ -1,4 +1,4 @@
-import { PI_MUL_TWO } from "./math/math";
+import { PI_DIV_TWO, PI_MUL_TWO } from "./math/math";
 
 export const COLORS =
 [
@@ -16,29 +16,30 @@ export const QUANTITY_EL_GENERATE = 10;
 
 export const PARTICLE_Z_DISPERSION = 100;
 
-export const PARTICLE_GENERATE_STEP_DEF = 0.5;
-export const PARTICLE_GENERATE_STEP_MIN = 0.1;
-export const PARTICLE_GENERATE_STEP_MAX = 1.0;
-export const PARTICLE_GENERATE_STEP_STEP = 0.05;
+export const PARTICLE_ANGLE_DISPERSION_DEF = PI_DIV_TWO;
+
+export const PARTICLE_GENERATE_STEP_DEF = 0.05;
+export const PARTICLE_GENERATE_STEP_MIN = 0.005;
+export const PARTICLE_GENERATE_STEP_MAX = 0.5;
+export const PARTICLE_GENERATE_STEP_STEP = 0.005;
 
 export const PARTICLE_MOVE_ANGLE_DEF = 0.00025;
 export const PARTICLE_MOVE_ANGLE_MIN = 0.00005;
 export const PARTICLE_MOVE_ANGLE_MAX = 0.001;
 export const PARTICLE_MOVE_ANGLE_STEP = 0.00005;
 
-// export const PARTICLE_MOVE_RADIUS_DEF = 0.02;
 export const PARTICLE_MOVE_RADIUS_DEF = 0.02;
 export const PARTICLE_MOVE_RADIUS_MIN = 0.001;
 export const PARTICLE_MOVE_RADIUS_MAX = 0.1;
 export const PARTICLE_MOVE_RADIUS_STEP = 0.001;
 
-export const PARTICLE_DIAMETER_MIN_DEF = 3.0;
-export const PARTICLE_DIAMETER_MIN_MIN = 2.0;
-export const PARTICLE_DIAMETER_MIN_MAX = 4.0;
+export const PARTICLE_DIAMETER_MIN_DEF = 1.0;
+export const PARTICLE_DIAMETER_MIN_MIN = 0.5;
+export const PARTICLE_DIAMETER_MIN_MAX = 2.0;
 export const PARTICLE_DIAMETER_MIN_STEP = 0.25;
 
-export const PARTICLE_DIAMETER_MAX_DEF = 5.0;
-export const PARTICLE_DIAMETER_MAX_MIN = 4.0;
+export const PARTICLE_DIAMETER_MAX_DEF = 4.0;
+export const PARTICLE_DIAMETER_MAX_MIN = 2.0;
 export const PARTICLE_DIAMETER_MAX_MAX = 6.0;
 export const PARTICLE_DIAMETER_MAX_STEP = 0.25;
 

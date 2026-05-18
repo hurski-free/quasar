@@ -1,6 +1,12 @@
-export interface IRender {
-  render(): void;
-  resize(width: number, height: number): void;
-  bindMainClass(mainClass: unknown): void;
-  setupDrawData(): void;
+import type { ImmutableFrameView } from "../FrameView";
+import type { ImmutableSession } from "../Session";
+import type { World } from "../world";
+
+export interface IRender<W extends World> {
+  render(world: W, frameView: ImmutableFrameView, session: ImmutableSession): void;
+  resize(frameView: ImmutableFrameView): void;
+  /**
+   * Helper method to setup buffers for drawing
+   */
+  setupDrawData(world: W, session: ImmutableSession): void;
 }

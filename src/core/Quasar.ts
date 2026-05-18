@@ -1,35 +1,30 @@
-import { PARTICLES_BUFFER_CAPACITY, PARTICLES_BUFFER_CPU_ID, PARTICLES_BUFFER_FLAGS_ID, PARTICLES_BUFFER_GPU_ID, PARTICLES_GPU_VALUES_PER_ELEMENT } from "./buffers.const";
-import { BufferSoAPool } from "./buffers/BufferSoAPool";
 import type { IEngine } from "./engine/IEngine";
-import type { ITransformation, ITransformationData } from "./math/ITransformation";
+import type { IFrameView, ITransformationData } from "./FrameView";
 import { clamp, DEGR_TO_RAD, getProjectionMatrix, getRotationX, getRotationY, getRotationZ, getTransformationMatrix, PI_MUL_TWO } from "./math/math";
 import type { IQuasarModelConfig } from "./quasar.conf";
 import type { IRender } from "./render/IRender";
+import type { ISession } from "./Session";
+import type { World } from "./world";
 
-/**
- * States:
- * 
- * 0 - wait for start
- *
- * 1 - running
- *
- * 2 - paused
- */
-export type TGameState = 0 | 1 | 2;
+export class Quasar<W extends World> {
+  private world: W;
+  private engine: IEngine<W>;
+  private renderer: IRender<W>;
+  private frameView: IFrameView;
+  private session: ISession;
 
-interface IQuasarConfig {
-  engine: IEngine;
-  renderer: IRender;
-}
+  private _animationFrameId: number = 0;
+  /** Bumped on pause/stop so in-flight tick callbacks cannot schedule another frame. */
+  private _tickGeneration = 0;
+  private _prevTimestamp: DOMHighResTimeStamp = 0;
 
-export class Quasar {
-  private engine: IEngine;
-  private renderer: IRender;
-
-  /**
-   * @see particlesPool
-   */
-  private _particlesPool: BufferSoAPool;
+  constructor(world: W, engine: IEngine<W>, renderer: IRender<W>, frameView: IFrameView, session: ISession) {
+    this.world = world;
+    this.engine = engine;
+    this.renderer = renderer;
+    this.frameView = frameView;
+    this.session = session;
+  }
 
   /**
    * States:
@@ -40,80 +35,22 @@ export class Quasar {
    *
    * 2 - paused
    */
-  private _animationState: TGameState = 0;
-  private _animationFrameId: number = 0;
-  /** Bumped on pause/stop so in-flight tick callbacks cannot schedule another frame. */
-  private _tickGeneration = 0;
-  private _prevTimestamp: DOMHighResTimeStamp = 0;
-
-  private _transformation: ITransformation;
-
-  private _modelConfig!: IQuasarModelConfig;
-
-  constructor(cfg: IQuasarConfig) {
-    this.engine = cfg.engine;
-    this.engine.bindMainClass(this);
-    this.renderer = cfg.renderer;
-    this.renderer.bindMainClass(this);
-
-    this._particlesPool = new BufferSoAPool(PARTICLES_BUFFER_CAPACITY);
-    this._particlesPool.createArrayBuffer({
-      name: PARTICLES_BUFFER_CPU_ID,
-      valuesPerElement: 1,
-      typedConstructor: Float32Array,
-    });
-    this._particlesPool.createArrayBuffer({
-      name: PARTICLES_BUFFER_GPU_ID,
-      valuesPerElement: PARTICLES_GPU_VALUES_PER_ELEMENT,
-      typedConstructor: Float32Array,
-    });
-    this._particlesPool.createArrayBuffer({
-      name: PARTICLES_BUFFER_FLAGS_ID,
-      valuesPerElement: 1,
-      typedConstructor: Int32Array,
-    });
-
-    this._transformation = {
-      distance: 1,
-      mRotateX: [],
-      mRotateY: [],
-      mRotateZ: [],
-      mProjection: [],
-      mTransform: [],
-    };
+  get state() {
+    return this.session.quasarState;
   }
 
-  /**
-   * Array[0] CPU DATA []
-   *
-   * Array[1] GPU DATA [polarR, polarAngle, z, diameter, colorR, colorG, colorB]
-   *
-   * Array[2] GPU DATA [armIndex]
-   */
-  get particlesPool() {
-    return this._particlesPool;
-  }
-
-  get transformation(): ITransformation {
-    return this._transformation;
-  }
-
-  get animationState() {
-    return this._animationState;
-  }
-
-  get modelConfig(): Readonly<IQuasarModelConfig> {
-    return this._modelConfig;
+  get particlesCount() {
+    return this.world.particlesPool.activeCount;
   }
 
   /* CYCLE CONTROL */
 
   start() {
-    if (this._animationState === 0) {
-      this._animationState = 1;
+    if (this.session.quasarState === 0) {
+      this.session.quasarState = 1;
 
-      this.engine.initializeData();
-      this.renderer.setupDrawData();
+      this.engine.initializeData(this.world, this.session);
+      this.renderer.setupDrawData(this.world, this.session);
 
       this._prevTimestamp = performance.now();
       this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
@@ -123,7 +60,7 @@ export class Quasar {
   tick(now: DOMHighResTimeStamp) {
     const generation = this._tickGeneration;
 
-    if (this._animationState !== 1 || generation !== this._tickGeneration) {
+    if (this.session.quasarState !== 1 || generation !== this._tickGeneration) {
       return;
     }
 
@@ -131,18 +68,18 @@ export class Quasar {
     this._prevTimestamp = now;
 
     if (deltaTime <= 200) {
-      this.engine.process();
-      this.renderer.render();
+      this.engine.process(this.world, this.session);
+      this.renderer.render(this.world, this.frameView, this.session);
     }
 
-    if (this._animationState === 1 && generation === this._tickGeneration) {
+    if (this.session.quasarState === 1 && generation === this._tickGeneration) {
       this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
   }
 
   pause() {
-    if (this._animationState === 1) {
-      this._animationState = 2;
+    if (this.session.quasarState === 1) {
+      this.session.quasarState = 2;
       this._tickGeneration++;
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = 0;
@@ -150,21 +87,21 @@ export class Quasar {
   }
 
   resume() {
-    if (this._animationState === 2) {
-      this._animationState = 1;
+    if (this.session.quasarState === 2) {
+      this.session.quasarState = 1;
       this._prevTimestamp = performance.now();
       this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
   }
 
   stop() {
-    if (this._animationState !== 0) {
-      this._animationState = 0;
+    if (this.session.quasarState !== 0) {
+      this.session.quasarState = 0;
       this._tickGeneration++;
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = 0;
-      this.clearObjects();
-      this.renderer.render();
+      this.world.clear();
+      this.renderer.render(this.world, this.frameView, this.session);
     }
   }
 
@@ -177,7 +114,7 @@ export class Quasar {
 
   rotateX(value: number, updateTransformation = true) {
     const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateX = getRotationX(rad);
+    this.frameView.mRotateX = getRotationX(rad);
 
     if (updateTransformation) {
       this.updateTransformation();
@@ -186,7 +123,7 @@ export class Quasar {
 
   rotateY(value: number, updateTransformation = true) {
     const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateY = getRotationY(rad);
+    this.frameView.mRotateY = getRotationY(rad);
 
     if (updateTransformation) {
       this.updateTransformation();
@@ -195,7 +132,7 @@ export class Quasar {
 
   rotateZ(value: number, updateTransformation = true) {
     const rad = clamp(value * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateZ = getRotationZ(rad);
+    this.frameView.mRotateZ = getRotationZ(rad);
 
     if (updateTransformation) {
       this.updateTransformation();
@@ -203,55 +140,53 @@ export class Quasar {
   }
 
   forward(value: number) {
-    this._transformation.distance = value;
+    this.frameView.distance = value;
 
-    if (this._animationState === 1) {
-      this.renderer.render();
+    if (this.session.quasarState === 1) {
+      this.renderer.render(this.world, this.frameView, this.session);
     }
   }
 
   prepareTransformation(data: ITransformationData) {
     const radX = clamp(data.rotateX * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateX = getRotationX(radX);
+    this.frameView.mRotateX = getRotationX(radX);
     const radY = clamp(data.rotateY * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateY = getRotationY(radY);
+    this.frameView.mRotateY = getRotationY(radY);
     const radZ = clamp(data.rotateZ * DEGR_TO_RAD, 0, PI_MUL_TWO);
-    this._transformation.mRotateZ = getRotationZ(radZ);
+    this.frameView.mRotateZ = getRotationZ(radZ);
 
-    this._transformation.distance = data.distance;
+    this.frameView.distance = data.distance;
 
-    this._transformation.mProjection = getProjectionMatrix(data.width, data.height, (data.width + data.height) * 2);
-    this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
+    this.frameView.mProjection = getProjectionMatrix(data.width, data.height, (data.width + data.height) * 2);
+    this.frameView.mTransform = getTransformationMatrix(this.frameView.mRotateX, this.frameView.mRotateY, this.frameView.mRotateZ, this.frameView.mProjection);
   }
 
   resizeCanvas(width: number, height: number) {
-    this._transformation.mProjection = getProjectionMatrix(width, height, width + height);
-    this.renderer.resize(width, height);
+    this.frameView.width = width;
+    this.frameView.height = height;
+
+    this.frameView.mProjection = getProjectionMatrix(width, height, width + height);
+    this.renderer.resize(this.frameView);
     this.updateTransformation();
   }
 
   private updateTransformation() {
-    this._transformation.mTransform = getTransformationMatrix(this._transformation.mRotateX, this._transformation.mRotateY, this._transformation.mRotateZ, this._transformation.mProjection);
+    this.frameView.mTransform = getTransformationMatrix(this.frameView.mRotateX, this.frameView.mRotateY, this.frameView.mRotateZ, this.frameView.mProjection);
 
-    if (this._animationState === 2) {
-      this.renderer.render();
+    if (this.session.quasarState === 2) {
+      this.renderer.render(this.world, this.frameView, this.session);
     }
   }
 
   /* MODEL CONFIG MANAGMENT */
 
   setModelConfig(config: IQuasarModelConfig) {
-    this._modelConfig = config;
-  }
-
-  /* MEMORY MANAGEMENT */
-
-  private clearObjects() {
-    this._particlesPool.clearObjects();
+    console.log('setModelConfig', config);
+    this.session.modelConfig = config;
   }
 
   dispose() {
     this.stop();
-    this._particlesPool.freeMemory();
+    this.world.freeMemory();
   }
 }

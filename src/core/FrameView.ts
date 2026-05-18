@@ -1,4 +1,7 @@
-export interface ITransformation {
+export interface IFrameView {
+  width: number;
+  height: number;
+
   /**
    * Distance to the camera
    */
@@ -20,18 +23,20 @@ export interface ITransformation {
    * Projection matrix
    */
   mProjection: number[];
-
+  
   /**
    * Final transformation matrix
    */
   mTransform: number[];
 }
 
+export type ImmutableFrameView = Readonly<IFrameView>;
+
 export interface ITransformationData {
-  rotateX: number;
-  rotateY: number;
-  rotateZ: number;
-  distance: number;
-  width: number;
-  height: number;
+  readonly rotateX: number;
+  readonly rotateY: number;
+  readonly rotateZ: number;
+  readonly distance: number;
+  readonly width: number;
+  readonly height: number;
 }

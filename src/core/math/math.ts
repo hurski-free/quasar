@@ -111,6 +111,32 @@ export function matrixMulMatrix(m1: number[], m2: number[]) {
 	return res;
 }
 
+export function colorStringToVec3(color: string): vec3 {
+  let hex = color.trim().replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  // validate length and characters
+  if (hex.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return [0, 0, 0]; // black color by default, if string is broken
+  }
+
+  // parse in one pass through bit shifts
+  const num = parseInt(hex, 16);
+  
+  return [
+    ((num >> 16) & 255) / 255, // R
+    ((num >> 8) & 255) / 255,  // G
+    (num & 255) / 255          // B
+  ];
+}
+
+// export function colorStringToVec3(color: string): vec3 {
+//   const [r, g, b] = color.match(/\w\w/g)?.map(c => parseInt(c, 16)) || [0, 0, 0];
+//   return [r / 255, g / 255, b / 255];
+// }
+
 export const PI         = Math.PI;
 export const PI_DIV_TWO = Math.PI / 2;
 export const PI_MUL_TWO = Math.PI * 2;

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Quasar } from '../core/Quasar';
-import { WebGL2dRender } from '../core/render/WebGL2Render';
-import { Engine } from '../core/engine/Engine';
 import type { IQuasarModelConfig } from '../core/quasar.conf';
 import { PARTICLES_GPU_VALUES_PER_ELEMENT } from '../core/buffers.const';
+import type { World } from '../core/world';
+import type { Quasar } from '../core/Quasar';
+import { createQuasar } from '../core/fabric';
 
 const props = defineProps<{
   rotateX: number;
@@ -21,17 +21,17 @@ const webgl2Supported = ref(false);
 
 const canvasContainerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const quasarRef = ref<Quasar | null>(null);
+const quasarRef = ref<Quasar<World> | null>(null);
 
 let resizeObserver: ResizeObserver | null = null;
 let initTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
 const particlesCount = computed(() => {
-  return quasarRef.value?.particlesPool.activeCount || 0;
+  return quasarRef.value?.particlesCount || 0;
 });
 
 const verticesCount = computed(() => {
-  return (quasarRef.value?.particlesPool.activeCount || 0) * PARTICLES_GPU_VALUES_PER_ELEMENT;
+  return (quasarRef.value?.particlesCount || 0) * PARTICLES_GPU_VALUES_PER_ELEMENT;
 });
 
 watch(() => props.rotateX, (newVal) => {
@@ -49,7 +49,17 @@ watch(() => props.distance, (newVal) => {
 watch(() => props.modelConfig, (newVal) => {
   console.log('modelConfig', newVal);
   quasarRef.value?.setModelConfig(newVal);
-  restartQuasar();
+
+  try {
+    restartQuasar();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Object pool is full') {
+        console.error('Object pool is full, increasing capacity');
+        alert('Object pool is full, increasing capacity');
+      }
+    }
+  }
 });
 
 function applyCanvasSize() {
@@ -87,9 +97,7 @@ function init() {
 
   teardownQuasar();
 
-  const renderer = new WebGL2dRender({ ctx: gl })
-  const engine = new Engine();
-  const quasar = new Quasar({ engine, renderer });
+  const quasar = createQuasar('webgl2-soa', gl);
 
   quasar.setModelConfig(props.modelConfig);
 
@@ -115,13 +123,13 @@ function togglePauseResume(): boolean | undefined {
   const quasar = quasarRef.value;
   if (!quasar) return undefined;
 
-  if (quasar.animationState === 1) {
+  if (quasar.state === 1) {
     quasar.pause();
-  } else if (quasar.animationState === 2) {
+  } else if (quasar.state === 2) {
     quasar.resume();
   }
 
-  return quasar.animationState === 1;
+  return quasar.state === 1;
 }
 
 function restartQuasar() {
