@@ -2,15 +2,18 @@
 import { onMounted, ref, useId } from 'vue';
 import Range from './atoms/Range.vue';
 import QDialog from './dialog/QDialog.vue';
-import {
-  getQuasarConfigurationProperties,
-  type IQuasarArmConfig,
-  type IQuasarModelConfig,
-} from '../core/quasar.conf';
 import { createRangeProperty, createRangePropertyRef, fillRangeProperty, fillRangePropertyRef, type QuasarArmRef } from '../utils/config.ref';
 import QButton from './atoms/QButton.vue';
 import Color from './atoms/Color.vue';
-import { colorStringToVec3, DEGR_TO_RAD, RAD_TO_DEGR, type vec3 } from '../core/math/math';
+import {
+  colorStringToVec3,
+  DEGR_TO_RAD,
+  RAD_TO_DEGR,
+  type vec3,
+  getQuasarConfigurationProperties,
+  type IQuasarModelConfig,
+  type IQuasarArmConfig,
+} from '../core';
 
 const props = defineProps<{
   modelConfig: IQuasarModelConfig;

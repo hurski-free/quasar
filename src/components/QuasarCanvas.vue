@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { IQuasarModelConfig } from '../core/quasar.conf';
-import { PARTICLES_GPU_VALUES_PER_ELEMENT } from '../core/buffers.const';
-import type { World } from '../core/world';
-import type { Quasar } from '../core/Quasar';
-import { createQuasar } from '../core/fabric';
+
+import {
+  type IQuasarModelConfig,
+  type Quasar,
+  type World,
+  createQuasar,
+  getParticlesGpuValuesPerElement,
+} from '../core';
 
 const props = defineProps<{
   rotateX: number;
@@ -31,7 +34,7 @@ const particlesCount = computed(() => {
 });
 
 const verticesCount = computed(() => {
-  return (quasarRef.value?.particlesCount || 0) * PARTICLES_GPU_VALUES_PER_ELEMENT;
+  return (quasarRef.value?.particlesCount || 0) * getParticlesGpuValuesPerElement();
 });
 
 watch(() => props.rotateX, (newVal) => {

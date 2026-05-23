@@ -1,5 +1,5 @@
 import { ref, type Ref } from "vue";
-import type { IQuasarRangeProperty } from "../core/quasar.conf";
+import type { IQuasarRangeProperty } from "../core";
 
 type QuasarRangePropertyRef = Omit<IQuasarRangeProperty, 'default'> & { value: number };
 

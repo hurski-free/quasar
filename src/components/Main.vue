@@ -11,16 +11,11 @@ import consoleIconUrl from '../assets/console.svg';
 import playIconUrl from '../assets/play.svg';
 import pauseIconUrl from '../assets/pause.svg';
 
-import {
-  INIT_ANGLE_X,
-  INIT_ANGLE_Y,
-  INIT_ANGLE_Z,
-} from '../core/quasar.const';
-import { getQuasarConfigurationProperties, type IQuasarModelConfig } from '../core/quasar.conf';
+import { getQuasarConfigurationProperties, type IQuasarModelConfig, QUASAR_CONST } from '../core';
 
-const rotateX = ref(INIT_ANGLE_X);
-const rotateY = ref(INIT_ANGLE_Y);
-const rotateZ = ref(INIT_ANGLE_Z);
+const rotateX = ref(QUASAR_CONST.INIT_ANGLE_X);
+const rotateY = ref(QUASAR_CONST.INIT_ANGLE_Y);
+const rotateZ = ref(QUASAR_CONST.INIT_ANGLE_Z);
 const distance = ref(1);
 
 const isPanelOpen = ref(true);
