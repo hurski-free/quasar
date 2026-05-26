@@ -181,7 +181,6 @@ export class Quasar<W extends World> {
   /* MODEL CONFIG MANAGMENT */
 
   setModelConfig(config: IQuasarModelConfig) {
-    console.log('setModelConfig', config);
     this.session.modelConfig = config;
   }
 

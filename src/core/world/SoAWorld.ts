@@ -34,7 +34,7 @@ export class SoAWorld implements IWorld {
   }
 
   /**
-   * Array[0] CPU DATA []
+   * Array[0] CPU DATA [minZ]
    *
    * Array[1] GPU DATA [polarR, polarAngle, z, diameter, colorR, colorG, colorB]
    *

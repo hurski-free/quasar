@@ -21,6 +21,8 @@ import {
   PARTICLE_GENERATE_STEP_MAX,
   PARTICLE_GENERATE_STEP_STEP,
   PARTICLE_ANGLE_DISPERSION_DEF,
+  PARTICLE_Z_DISPERSION_DEF,
+  PARTICLE_ANGLE_CENTERED_POWER_DEF,
 } from "./quasar.const";
 
 export interface IQuasarRangeProperty {
@@ -35,6 +37,8 @@ export interface IQuasarArmConfig {
 
   angle: number;
   angleDispersion: number;
+  angleCenteredPower: number;
+  zDispersion: number;
   /**
    * density of particles inside arm
    */
@@ -86,6 +90,8 @@ const configurationProperties = {
         index: 0,
         angle: 0,
         angleDispersion: PARTICLE_ANGLE_DISPERSION_DEF,
+        angleCenteredPower: PARTICLE_ANGLE_CENTERED_POWER_DEF,
+        zDispersion: PARTICLE_Z_DISPERSION_DEF,
         particleGenerateStep: PARTICLE_GENERATE_STEP_DEF,
         color: [1, 1, 1] as vec3,
       },
@@ -93,6 +99,8 @@ const configurationProperties = {
         index: 1,
         angle: Math.PI,
         angleDispersion: PARTICLE_ANGLE_DISPERSION_DEF,
+        angleCenteredPower: PARTICLE_ANGLE_CENTERED_POWER_DEF,
+        zDispersion: PARTICLE_Z_DISPERSION_DEF,
         particleGenerateStep: PARTICLE_GENERATE_STEP_DEF,
         color: [1, 0.66, 0.18] as vec3,
       },
@@ -112,7 +120,19 @@ const configurationProperties = {
     angleDispersion: {
       default: 0,
       min: 0,
-      max: 360,
+      max: 180,
+      step: 1,
+    } satisfies Readonly<IQuasarRangeProperty>,
+    angleCenteredPower: {
+      default: PARTICLE_ANGLE_CENTERED_POWER_DEF,
+      min: 1,
+      max: 5,
+      step: 1,
+    } satisfies Readonly<IQuasarRangeProperty>,
+    zDispersion: {
+      default: 0,
+      min: 0,
+      max: 100,
       step: 1,
     } satisfies Readonly<IQuasarRangeProperty>,
   },

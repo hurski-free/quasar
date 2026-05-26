@@ -11,6 +11,17 @@ export function random(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
 
+export function randomCentered(min: number, max: number, power = 2): number {
+  const center = (min + max) / 2;
+  const half = (max - min) / 2;
+  const biased = Math.pow(Math.random(), power);
+  return center + (Math.random() < 0.5 ? -1 : 1) * biased * half;
+}
+
+export function randomBiased(min: number, max: number, power = 2): number {
+  return min + Math.pow(Math.random(), power) * (max - min);
+}
+
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }

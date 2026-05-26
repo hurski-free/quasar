@@ -44,15 +44,21 @@ function addArm() {
   const particleGenerateStep = createRangeProperty();
   const angle = createRangeProperty();
   const angleDispersion = createRangeProperty();
+  const angleCenteredPower = createRangeProperty();
+  const zDispersion = createRangeProperty();
 
   fillRangeProperty(particleGenerateStep, cfg.arms.particleGenerateStep);
   fillRangeProperty(angle, cfg.arms.angle);
   fillRangeProperty(angleDispersion, cfg.arms.angleDispersion);
+  fillRangeProperty(angleCenteredPower, cfg.arms.angleCenteredPower);
+  fillRangeProperty(zDispersion, cfg.arms.zDispersion);
 
   arms.value.push({
     id: `${idPrefix}-${armCounter.value}`,
     angle,
     angleDispersion,
+    angleCenteredPower,
+    zDispersion,
     particleGenerateStep,
     color: '#FFFFFF',
   } satisfies QuasarArmRef);
@@ -94,6 +100,8 @@ function isQuasarModelConfig(value: unknown): value is IQuasarModelConfig {
       typeof item.index === 'number' &&
       typeof item.angle === 'number' &&
       typeof item.angleDispersion === 'number' &&
+      typeof item.angleCenteredPower === 'number' &&
+      typeof item.zDispersion === 'number' &&
       typeof item.particleGenerateStep === 'number' &&
       isVec3(item.color)
     );
@@ -110,6 +118,8 @@ function buildModelConfig(): IQuasarModelConfig {
       index,
       angle: arm.angle.value * DEGR_TO_RAD,
       angleDispersion: arm.angleDispersion.value * DEGR_TO_RAD,
+      angleCenteredPower: arm.angleCenteredPower.value,
+      zDispersion: arm.zDispersion.value,
       particleGenerateStep: arm.particleGenerateStep.value,
       color: colorStringToVec3(arm.color),
     })),
@@ -123,19 +133,26 @@ function createArmFromConfig(armConfig: IQuasarArmConfig): QuasarArmRef {
   const particleGenerateStep = createRangeProperty();
   const angle = createRangeProperty();
   const angleDispersion = createRangeProperty();
+  const angleCenteredPower = createRangeProperty();
+  const zDispersion = createRangeProperty();
 
   fillRangeProperty(particleGenerateStep, cfg.arms.particleGenerateStep);
   fillRangeProperty(angle, cfg.arms.angle);
   fillRangeProperty(angleDispersion, cfg.arms.angleDispersion);
+  fillRangeProperty(angleCenteredPower, cfg.arms.angleCenteredPower);
+  fillRangeProperty(zDispersion, cfg.arms.zDispersion);
 
   particleGenerateStep.value = armConfig.particleGenerateStep;
   angle.value = armConfig.angle * RAD_TO_DEGR;
   angleDispersion.value = armConfig.angleDispersion * RAD_TO_DEGR;
+  zDispersion.value = armConfig.zDispersion;
 
   return {
     id: `${idPrefix}-${armCounter.value}`,
     angle,
     angleDispersion,
+    angleCenteredPower,
+    zDispersion,
     particleGenerateStep,
     color: vec3ToColorString(armConfig.color),
   };
@@ -237,6 +254,8 @@ onMounted(() => {
                 <Range v-model="arm.particleGenerateStep.value" label="Generate step" :min="arm.particleGenerateStep.min" :max="arm.particleGenerateStep.max" :step="arm.particleGenerateStep.step" />
                 <Range v-model="arm.angle.value" label="Angle" :min="arm.angle.min" :max="arm.angle.max" :step="arm.angle.step" />
                 <Range v-model="arm.angleDispersion.value" label="Angle dispersion" :min="arm.angleDispersion.min" :max="arm.angleDispersion.max" :step="arm.angleDispersion.step" />
+                <Range v-model="arm.angleCenteredPower.value" label="Angle centered power" :min="arm.angleCenteredPower.min" :max="arm.angleCenteredPower.max" :step="arm.angleCenteredPower.step" />
+                <Range v-model="arm.zDispersion.value" label="Z dispersion" :min="arm.zDispersion.min" :max="arm.zDispersion.max" :step="arm.zDispersion.step" />
                 <Color v-model="arm.color" label="Color" />
               </div>
               <div>

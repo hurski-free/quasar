@@ -50,7 +50,6 @@ watch(() => props.distance, (newVal) => {
   quasarRef.value?.forward(newVal);
 });
 watch(() => props.modelConfig, (newVal) => {
-  console.log('modelConfig', newVal);
   quasarRef.value?.setModelConfig(newVal);
 
   try {

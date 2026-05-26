@@ -7,6 +7,8 @@ export type QuasarArmRef = {
   id: string;
   angle: QuasarRangePropertyRef;
   angleDispersion: QuasarRangePropertyRef;
+  angleCenteredPower: QuasarRangePropertyRef;
+  zDispersion: QuasarRangePropertyRef;
   particleGenerateStep: QuasarRangePropertyRef;
   color: string;
 };
