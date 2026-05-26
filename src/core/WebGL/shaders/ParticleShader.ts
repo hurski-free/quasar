@@ -22,11 +22,11 @@ void main() {
   // gl_PointSize = a_position.w / u_distance;
   gl_PointSize = a_position.w;
 
-  float t = a_position.x / u_radius;
+  float t = pow(a_position.x / u_radius, 0.25);
   vec3 finalColor = mix(center_color, a_color, t);
 
   // v_color = vec4(finalColor, 1.0);
-  v_color = vec4(finalColor, 1.0) * pow(1.8 - a_position.x / u_radius, 2.0);
+  v_color = vec4(finalColor, 1.0) * pow(1.75 - a_position.x / u_radius, 2.0);
   // v_color = vec4(a_color, 1.0) * pow(1.0 - a_position.x / u_radius, 1.4);
 }
 `;
