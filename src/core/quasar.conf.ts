@@ -39,6 +39,7 @@ export interface IQuasarArmConfig {
   angleDispersion: number;
   angleCenteredPower: number;
   zDispersion: number;
+  zCenteredPower: number;
   /**
    * density of particles inside arm
    */
@@ -133,6 +134,12 @@ const configurationProperties = {
       default: 0,
       min: 0,
       max: 100,
+      step: 1,
+    } satisfies Readonly<IQuasarRangeProperty>,
+    zCenteredPower: {
+      default: 2,
+      min: 1,
+      max: 5,
       step: 1,
     } satisfies Readonly<IQuasarRangeProperty>,
   },

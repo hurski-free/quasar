@@ -1,5 +1,5 @@
 import { PARTICLES_CPU_VALUES_PER_ELEMENT, PARTICLES_FLAGS_VALUES_PER_ELEMENT, PARTICLES_GPU_VALUES_PER_ELEMENT } from "../buffers.const";
-import { random, randomBiased, randomCentered } from "../math/math";
+import { randomBiased, randomCentered } from "../math/math";
 import type { IQuasarArmConfig } from "../quasar.conf";
 import { PARTICLE_DIAMETER_MAX_DEF, PARTICLE_DIAMETER_MIN_DEF, QUANTITY_EL_GENERATE } from "../quasar.const";
 import type { ImmutableSession } from "../Session";
@@ -24,6 +24,7 @@ export class SoAEngine implements IEngine<SoAWorld>  {
 
     for (let i = 0; i < count; i++) {
       const base = PARTICLES_GPU_VALUES_PER_ELEMENT * i;
+      const cpuBase = PARTICLES_CPU_VALUES_PER_ELEMENT * i;
 
       if (this.isInsideBlackHole(particlesGpuData, base, blackHoleRadius)) {
         this.respawnIndices[this.respawnCount++] = i;
@@ -35,12 +36,7 @@ export class SoAEngine implements IEngine<SoAWorld>  {
       particlesGpuData[base] = polarR;
       particlesGpuData[base + 1] += angleStep;
 
-      // 
-      if (polarR < modelRadius * 0.3 &&
-        Math.abs(particlesGpuData[base + 2]) > particlesCpuData[PARTICLES_CPU_VALUES_PER_ELEMENT * i]
-      ) {
-        particlesGpuData[base + 2] *= 0.995;
-      }
+      particlesGpuData[base + 2] -= particlesCpuData[cpuBase + 1] * particlesCpuData[cpuBase]; // +zStep
     }
 
     this.respawnAbsorbedParticles(particlesGpuData, world.particlesCpuData, world.particlesFlagsData, session);
@@ -56,6 +52,10 @@ export class SoAEngine implements IEngine<SoAWorld>  {
   respawnAbsorbedParticles(gpuData: Float32Array, cpuData: Float32Array, flagsData: Int32Array, session: ImmutableSession) {
     const { modelRadius, arms } = session.modelConfig;
 
+    const radiusStep = session.modelConfig.radiusStep;
+    const countStep = modelRadius / radiusStep;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
+
     for (let i = 0; i < this.respawnCount; i++) {
       const particleIndex = this.respawnIndices[i];
       
@@ -66,16 +66,24 @@ export class SoAEngine implements IEngine<SoAWorld>  {
       const arm = arms[flagsData[flagsBase]];
 
       let deltaAngle = randomCentered(-arm.angleDispersion, arm.angleDispersion, arm.angleCenteredPower);
-      let z = random(- arm.zDispersion, arm.zDispersion);
-      let disp = Math.abs(deltaAngle) / arm.angleDispersion;
+      const angleDispersionK = Math.abs(deltaAngle) / arm.angleDispersion;
+      const angleDispersionKInverse = Math.pow(1 - angleDispersionK, 0.75);
+
+      let z = randomCentered(- arm.zDispersion * angleDispersionKInverse, arm.zDispersion * angleDispersionKInverse, arm.zCenteredPower);
+      const zDispersionK = Math.abs(z) / arm.zDispersion;
+
+      // far particles via z/angle must be smaller
+      let disp = Math.max(angleDispersionK, zDispersionK);
 
       const size = PARTICLE_DIAMETER_MAX_DEF - (PARTICLE_DIAMETER_MAX_DEF - PARTICLE_DIAMETER_MIN_DEF) * disp;
 
       //
       if (size < 0.25) {
-        console.log('disp', disp);
         continue;
       }
+
+      const minZ = Math.min(Math.abs(randomBiased(0, 0.8, 3) * z), blackHoleRadius * 0.6);
+      const zStep = (Math.abs(z) - Math.abs(minZ)) / countStep;
 
       // let color = vecMulValue(arm.color, disp);
       let color = arm.color;
@@ -89,7 +97,8 @@ export class SoAEngine implements IEngine<SoAWorld>  {
       gpuData[gpuBase + 5] = color[1];
       gpuData[gpuBase + 6] = color[2];
 
-      cpuData[cpuBase] = randomBiased(0, 0.8, 3) * z;
+      cpuData[cpuBase] = Math.sign(z) * minZ;
+      cpuData[cpuBase + 1] = zStep;
     }
   }
 
@@ -121,16 +130,22 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     const angleStep = session.modelConfig.angleStep;
     const radiusStep = session.modelConfig.radiusStep;
     const modelRadius = session.modelConfig.modelRadius;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
 
     const { angle, color } = arm;
   
-    let alphaOffset = angleStep / radiusStep * (modelRadius - radius);
+    const countStep = (modelRadius - radius) / radiusStep;
+    let alphaOffset = angleStep * countStep;
   
     for(let i = 0; i < QUANTITY_EL_GENERATE; i++) {
       let deltaAngle = randomCentered(-arm.angleDispersion, arm.angleDispersion, arm.angleCenteredPower);
-      let z = randomCentered(- arm.zDispersion, arm.zDispersion, 3);
-      let disp = Math.abs(deltaAngle) / arm.angleDispersion;
+      const angleDispersionK = Math.abs(deltaAngle) / arm.angleDispersion;
+      const angleDispersionKInverse = Math.pow(1 - angleDispersionK, 0.75);
 
+      let z = randomCentered(- arm.zDispersion * angleDispersionKInverse, arm.zDispersion * angleDispersionKInverse, arm.zCenteredPower);
+      const zDispersionK = Math.abs(z) / arm.zDispersion;
+
+      let disp = Math.max(angleDispersionK, zDispersionK);
       const size = PARTICLE_DIAMETER_MAX_DEF - (PARTICLE_DIAMETER_MAX_DEF - PARTICLE_DIAMETER_MIN_DEF) * disp;
 
       //
@@ -138,20 +153,26 @@ export class SoAEngine implements IEngine<SoAWorld>  {
         continue;
       }
 
+      const minZ = Math.min(Math.abs(randomBiased(0, 0.8, 3) * z), blackHoleRadius * 0.6);
+      const zStep = (Math.abs(z) - Math.abs(minZ)) / (modelRadius / radiusStep);
+      const zOffset = Math.sign(z) * zStep * countStep;
+
       // let color = vecMulValue(arm.color, disp);
 
       const pId = particlesPool.getNewObject();
 
       particlesGpuData[pId * 7] = radius;
       particlesGpuData[pId * 7 + 1] = angle + alphaOffset + deltaAngle;
-      particlesGpuData[pId * 7 + 2] = z;
+      particlesGpuData[pId * 7 + 2] = z - zOffset;
       particlesGpuData[pId * 7 + 3] = size;
 
       particlesGpuData[pId * 7 + 4] = color[0];
       particlesGpuData[pId * 7 + 5] = color[1];
       particlesGpuData[pId * 7 + 6] = color[2];
 
-      particlesCpuData[pId] = randomBiased(0, 0.8, 3) * z;
+      // absolute maximum for particle 'z' near black hole
+      particlesCpuData[pId * 2] = Math.sign(z); // clamp to black hole radius
+      particlesCpuData[pId * 2 + 1] = zStep;
 
       particlesFlagsData[pId] = arm.index;
     }

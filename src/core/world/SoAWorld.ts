@@ -14,7 +14,7 @@ export class SoAWorld implements IWorld {
 
     this._particlesPool.createArrayBuffer({
       name: PARTICLES_BUFFER_CPU_ID,
-      valuesPerElement: 1,
+      valuesPerElement: 2,
       typedConstructor: Float32Array,
     });
     this._particlesPool.createArrayBuffer({
@@ -34,7 +34,7 @@ export class SoAWorld implements IWorld {
   }
 
   /**
-   * Array[0] CPU DATA [minZ]
+   * Array[0] CPU DATA [minZ, zStep]
    *
    * Array[1] GPU DATA [polarR, polarAngle, z, diameter, colorR, colorG, colorB]
    *

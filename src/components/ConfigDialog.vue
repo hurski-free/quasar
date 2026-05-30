@@ -46,12 +46,14 @@ function addArm() {
   const angleDispersion = createRangeProperty();
   const angleCenteredPower = createRangeProperty();
   const zDispersion = createRangeProperty();
+  const zCenteredPower = createRangeProperty();
 
   fillRangeProperty(particleGenerateStep, cfg.arms.particleGenerateStep);
   fillRangeProperty(angle, cfg.arms.angle);
   fillRangeProperty(angleDispersion, cfg.arms.angleDispersion);
   fillRangeProperty(angleCenteredPower, cfg.arms.angleCenteredPower);
   fillRangeProperty(zDispersion, cfg.arms.zDispersion);
+  fillRangeProperty(zCenteredPower, cfg.arms.zCenteredPower);
 
   arms.value.push({
     id: `${idPrefix}-${armCounter.value}`,
@@ -59,6 +61,7 @@ function addArm() {
     angleDispersion,
     angleCenteredPower,
     zDispersion,
+    zCenteredPower,
     particleGenerateStep,
     color: '#FFFFFF',
   } satisfies QuasarArmRef);
@@ -120,6 +123,7 @@ function buildModelConfig(): IQuasarModelConfig {
       angleDispersion: arm.angleDispersion.value * DEGR_TO_RAD,
       angleCenteredPower: arm.angleCenteredPower.value,
       zDispersion: arm.zDispersion.value,
+      zCenteredPower: arm.zCenteredPower.value,
       particleGenerateStep: arm.particleGenerateStep.value,
       color: colorStringToVec3(arm.color),
     })),
@@ -135,17 +139,20 @@ function createArmFromConfig(armConfig: IQuasarArmConfig): QuasarArmRef {
   const angleDispersion = createRangeProperty();
   const angleCenteredPower = createRangeProperty();
   const zDispersion = createRangeProperty();
+  const zCenteredPower = createRangeProperty();
 
   fillRangeProperty(particleGenerateStep, cfg.arms.particleGenerateStep);
   fillRangeProperty(angle, cfg.arms.angle);
   fillRangeProperty(angleDispersion, cfg.arms.angleDispersion);
   fillRangeProperty(angleCenteredPower, cfg.arms.angleCenteredPower);
   fillRangeProperty(zDispersion, cfg.arms.zDispersion);
+  fillRangeProperty(zCenteredPower, cfg.arms.zCenteredPower);
 
   particleGenerateStep.value = armConfig.particleGenerateStep;
   angle.value = armConfig.angle * RAD_TO_DEGR;
   angleDispersion.value = armConfig.angleDispersion * RAD_TO_DEGR;
   zDispersion.value = armConfig.zDispersion;
+  zCenteredPower.value = armConfig.zCenteredPower;
 
   return {
     id: `${idPrefix}-${armCounter.value}`,
@@ -153,6 +160,7 @@ function createArmFromConfig(armConfig: IQuasarArmConfig): QuasarArmRef {
     angleDispersion,
     angleCenteredPower,
     zDispersion,
+    zCenteredPower,
     particleGenerateStep,
     color: vec3ToColorString(armConfig.color),
   };
@@ -256,6 +264,7 @@ onMounted(() => {
                 <Range v-model="arm.angleDispersion.value" label="Angle dispersion" :min="arm.angleDispersion.min" :max="arm.angleDispersion.max" :step="arm.angleDispersion.step" />
                 <Range v-model="arm.angleCenteredPower.value" label="Angle centered power" :min="arm.angleCenteredPower.min" :max="arm.angleCenteredPower.max" :step="arm.angleCenteredPower.step" />
                 <Range v-model="arm.zDispersion.value" label="Z dispersion" :min="arm.zDispersion.min" :max="arm.zDispersion.max" :step="arm.zDispersion.step" />
+                <Range v-model="arm.zCenteredPower.value" label="Z centered power" :min="arm.zCenteredPower.min" :max="arm.zCenteredPower.max" :step="arm.zCenteredPower.step" />
                 <Color v-model="arm.color" label="Color" />
               </div>
               <div>

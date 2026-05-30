@@ -50,7 +50,7 @@ onMounted(() => {
     <Range v-model="rotateX" label="Rotate X" :min="0" :max="360" :step="1" @update:model-value="updateRotateX" />
     <Range v-model="rotateY" label="Rotate Y" :min="0" :max="360" :step="1" @update:model-value="updateRotateY" />
     <Range v-model="rotateZ" label="Rotate Z" :min="0" :max="360" :step="1" @update:model-value="updateRotateZ" />
-    <Range v-model="distance" label="Distance" :min="0.5" :max="2" :step="0.01" @update:model-value="updateDistance" />
+    <Range v-model="distance" label="Distance" :min="0.5" :max="3" :step="0.01" @update:model-value="updateDistance" />
   </div>
 </template>
 

@@ -54,8 +54,8 @@ export const BLACK_HOLE_DIAMETER_MAX = 100.0;
 export const BLACK_HOLE_DIAMETER_STEP = 5;
 
 // angles in degrees
-export const INIT_ANGLE_X = 229.18;
-export const INIT_ANGLE_Y = 13.75;
+export const INIT_ANGLE_X = 256;
+export const INIT_ANGLE_Y = 14;
 export const INIT_ANGLE_Z = 0;
 
 export const JETS_TIME = 1000;
