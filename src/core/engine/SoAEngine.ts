@@ -20,7 +20,6 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     const radiusStep = session.modelConfig.radiusStep;
     const angleStep = session.modelConfig.angleStep;
     const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
-    const modelRadius = session.modelConfig.modelRadius;
 
     for (let i = 0; i < count; i++) {
       const base = PARTICLES_GPU_VALUES_PER_ELEMENT * i;
