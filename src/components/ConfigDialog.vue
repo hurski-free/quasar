@@ -105,6 +105,7 @@ function isQuasarModelConfig(value: unknown): value is IQuasarModelConfig {
       typeof item.angleDispersion === 'number' &&
       typeof item.angleCenteredPower === 'number' &&
       typeof item.zDispersion === 'number' &&
+      typeof item.zCenteredPower === 'number' &&
       typeof item.particleGenerateStep === 'number' &&
       isVec3(item.color)
     );
