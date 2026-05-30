@@ -23,6 +23,7 @@ import {
   PARTICLE_ANGLE_DISPERSION_DEF,
   PARTICLE_Z_DISPERSION_DEF,
   PARTICLE_ANGLE_CENTERED_POWER_DEF,
+  PARTICLE_Z_CENTERED_POWER_DEF,
 } from "./quasar.const";
 
 export interface IQuasarRangeProperty {
@@ -93,6 +94,7 @@ const configurationProperties = {
         angleDispersion: PARTICLE_ANGLE_DISPERSION_DEF,
         angleCenteredPower: PARTICLE_ANGLE_CENTERED_POWER_DEF,
         zDispersion: PARTICLE_Z_DISPERSION_DEF,
+        zCenteredPower: PARTICLE_Z_CENTERED_POWER_DEF,
         particleGenerateStep: PARTICLE_GENERATE_STEP_DEF,
         color: [1, 1, 1] as vec3,
       },
@@ -102,6 +104,7 @@ const configurationProperties = {
         angleDispersion: PARTICLE_ANGLE_DISPERSION_DEF,
         angleCenteredPower: PARTICLE_ANGLE_CENTERED_POWER_DEF,
         zDispersion: PARTICLE_Z_DISPERSION_DEF,
+        zCenteredPower: PARTICLE_Z_CENTERED_POWER_DEF,
         particleGenerateStep: PARTICLE_GENERATE_STEP_DEF,
         color: [1, 0.66, 0.18] as vec3,
       },
