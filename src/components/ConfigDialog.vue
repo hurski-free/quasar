@@ -187,6 +187,11 @@ function applyModelConfig(config: IQuasarModelConfig) {
   radiusStep.value.value = config.radiusStep;
   modelRadius.value.value = config.modelRadius;
   blackHoleDiameter.value.value = config.blackHoleDiameter;
+  jetsMoveRadius.value.value = config.jetsMoveRadius;
+  jetsMoveAngle.value.value = config.jetsMoveAngle;
+  jetsMoveZ.value.value = config.jetsMoveZ;
+  jetsTime.value.value = config.jetsTime;
+  jetsColor.value = vec3ToColorString(config.jetsColor);
   arms.value = config.arms.map((arm) => createArmFromConfig(arm));
 }
 
