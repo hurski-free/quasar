@@ -52,6 +52,8 @@ export class Quasar<W extends World> {
       this.engine.initializeData(this.world, this.session);
       this.renderer.setupDrawData(this.world, this.session);
 
+      this.session.jetsTime = 0;
+
       this._prevTimestamp = performance.now();
       this._animationFrameId = requestAnimationFrame((currentTime) => this.tick(currentTime));
     }
@@ -70,6 +72,10 @@ export class Quasar<W extends World> {
     if (deltaTime <= 200) {
       this.engine.process(this.world, this.session);
       this.renderer.render(this.world, this.frameView, this.session);
+
+      if (this.session.jetsTime > 0) {
+        this.session.jetsTime--;
+      }
     }
 
     if (this.session.quasarState === 1 && generation === this._tickGeneration) {
@@ -144,6 +150,12 @@ export class Quasar<W extends World> {
 
     if (this.session.quasarState === 1) {
       this.renderer.render(this.world, this.frameView, this.session);
+    }
+  }
+
+  generateJet() {
+    if (this.session.jetsTime <= 0) {
+      this.session.jetsTime = this.session.modelConfig.jetsTime;
     }
   }
 

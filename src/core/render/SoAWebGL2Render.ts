@@ -1,7 +1,8 @@
-import { PARTICLES_BUFFER_GPU_ID } from "../buffers.const";
+import { JETS_BUFFER_GPU_ID, JETS_GPU_VALUES_PER_ELEMENT, PARTICLES_BUFFER_GPU_ID, PARTICLES_GPU_VALUES_PER_ELEMENT } from "../buffers.const";
 import type { ImmutableFrameView } from "../FrameView";
 import type { ImmutableSession } from "../Session";
 import { blackHoleShader, type TBlackHoleShaderUniforms } from "../WebGL/shaders/BlackHoleShader";
+import { jetShader, type TJetShaderUniforms } from "../WebGL/shaders/JetShader";
 import { particleShader, type TParticleShaderUniforms } from "../WebGL/shaders/ParticleShader";
 import { GLProgram } from "../WebGL/WebGLProgram";
 import type { SoAWorld } from "../world/SoAWorld";
@@ -15,6 +16,7 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
   private _gl: WebGL2RenderingContext;
 
   private particlesShader: GLProgram<TParticleShaderUniforms>;
+  private jetsShader: GLProgram<TJetShaderUniforms>;
   private blackHoleShader: GLProgram<TBlackHoleShaderUniforms>;
 
   private blackHoleBufferData: Float32Array;
@@ -25,12 +27,17 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
   private particlesVAO: WebGLVertexArrayObject;
   private particlesVBO: WebGLBuffer;
 
+  private jetsBufferData!: Float32Array;
+  private jetsVAO: WebGLVertexArrayObject;
+  private jetsVBO: WebGLBuffer;
+
   constructor(cfg: IWebGLRenderConfig) {
     this._gl = cfg.ctx;
 
     const gl = this._gl;
 
     this.particlesShader = new GLProgram(gl, particleShader);
+    this.jetsShader = new GLProgram(gl, jetShader);
     this.blackHoleShader = new GLProgram(gl, blackHoleShader);
 
     // WEBGL setup
@@ -44,6 +51,9 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
 
     this.particlesVAO = gl.createVertexArray();
     this.particlesVBO = gl.createBuffer();
+
+    this.jetsVAO = gl.createVertexArray();
+    this.jetsVBO = gl.createBuffer();
 
     this.blackHoleBufferData = new Float32Array(3);
     
@@ -66,6 +76,20 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // Draw jets
+    if (world.jetsPool.activeCount > 0) {
+      gl.useProgram(this.jetsShader.program);
+      gl.uniform1f(this.jetsShader.uniforms.u_light, 1.0);
+      gl.uniformMatrix4fv(this.jetsShader.uniforms.u_transform, false, frameView.mTransform);
+      gl.uniform1f(this.jetsShader.uniforms.u_distance, frameView.distance);
+
+      gl.bindVertexArray(this.jetsVAO);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.jetsVBO);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.jetsBufferData.subarray(0, world.jetsPool.activeCount * JETS_GPU_VALUES_PER_ELEMENT));
+
+      gl.drawArrays(gl.POINTS, 0, world.jetsPool.activeCount);
+    }
+
     // Draw particles
     
     if (world.particlesPool.activeCount > 0) {
@@ -77,7 +101,7 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
 
       gl.bindVertexArray(this.particlesVAO);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.particlesVBO);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.particlesBufferData.subarray(0, world.particlesPool.activeCount * 7));
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.particlesBufferData.subarray(0, world.particlesPool.activeCount * PARTICLES_GPU_VALUES_PER_ELEMENT));
 
       gl.drawArrays(gl.POINTS, 0, world.particlesPool.activeCount);
     }
@@ -122,5 +146,20 @@ export class SoAWebGL2Render implements IRender<SoAWorld> {
       gl.bindVertexArray(null);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
+
+    this.jetsBufferData = world.jetsPool.getTypedArray(JETS_BUFFER_GPU_ID);
+
+    gl.bindVertexArray(this.jetsVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.jetsVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, this.jetsBufferData.byteLength, gl.DYNAMIC_DRAW);
+
+    gl.vertexAttribPointer(0, 4, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 7, 0);
+    gl.enableVertexAttribArray(0);
+
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, Float32Array.BYTES_PER_ELEMENT * 7, Float32Array.BYTES_PER_ELEMENT * 4);
+    gl.enableVertexAttribArray(1);
+
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 }

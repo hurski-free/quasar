@@ -26,6 +26,11 @@ const angleStep = createRangePropertyRef();
 const radiusStep = createRangePropertyRef();
 const modelRadius = createRangePropertyRef();
 const blackHoleDiameter = createRangePropertyRef();
+const jetsMoveRadius = createRangePropertyRef();
+const jetsMoveAngle = createRangePropertyRef();
+const jetsMoveZ = createRangePropertyRef();
+const jetsTime = createRangePropertyRef();
+const jetsColor = ref<string>('#FFFFFF');
 
 const idPrefix = useId();
 const armCounter = ref(0);
@@ -90,6 +95,11 @@ function isQuasarModelConfig(value: unknown): value is IQuasarModelConfig {
     typeof config.radiusStep !== 'number' ||
     typeof config.modelRadius !== 'number' ||
     typeof config.blackHoleDiameter !== 'number' ||
+    typeof config.jetsMoveRadius !== 'number' ||
+    typeof config.jetsMoveAngle !== 'number' ||
+    typeof config.jetsMoveZ !== 'number' ||
+    typeof config.jetsTime !== 'number' ||
+    !isVec3(config.jetsColor) ||
     !Array.isArray(config.arms)
   ) {
     return false;
@@ -118,6 +128,11 @@ function buildModelConfig(): IQuasarModelConfig {
     radiusStep: radiusStep.value.value,
     modelRadius: modelRadius.value.value,
     blackHoleDiameter: blackHoleDiameter.value.value,
+    jetsMoveRadius: jetsMoveRadius.value.value,
+    jetsMoveAngle: jetsMoveAngle.value.value,
+    jetsMoveZ: jetsMoveZ.value.value,
+    jetsTime: jetsTime.value.value,
+    jetsColor: colorStringToVec3(jetsColor.value),
     arms: arms.value.map((arm, index) => ({
       index,
       angle: arm.angle.value * DEGR_TO_RAD,
@@ -225,6 +240,12 @@ onMounted(() => {
   fillRangePropertyRef(radiusStep, cfg.radiusStep);
   fillRangePropertyRef(modelRadius, cfg.modelRadius);
   fillRangePropertyRef(blackHoleDiameter, cfg.blackHoleDiameter);
+  fillRangePropertyRef(jetsMoveRadius, cfg.jetsMoveRadius);
+  fillRangePropertyRef(jetsMoveAngle, cfg.jetsMoveAngle);
+  fillRangePropertyRef(jetsMoveZ, cfg.jetsMoveZ);
+  fillRangePropertyRef(jetsTime, cfg.jetsTime);
+
+  jetsColor.value = vec3ToColorString(cfg.jetsColor.default);
 });
 </script>
 
@@ -255,6 +276,21 @@ onMounted(() => {
           </div>
           <div class="config-dialog-props__range-item">
             <Range v-model="blackHoleDiameter.value" label="Black hole diameter" :min="blackHoleDiameter.min" :max="blackHoleDiameter.max" :step="blackHoleDiameter.step" />
+          </div>
+          <div class="config-dialog-props__range-item">
+            <Range v-model="jetsMoveRadius.value" label="Jets move radius" :min="jetsMoveRadius.min" :max="jetsMoveRadius.max" :step="jetsMoveRadius.step" />
+          </div>
+          <div class="config-dialog-props__range-item">
+            <Range v-model="jetsMoveAngle.value" label="Jets move angle" :min="jetsMoveAngle.min" :max="jetsMoveAngle.max" :step="jetsMoveAngle.step" />
+          </div>
+          <div class="config-dialog-props__range-item">
+            <Range v-model="jetsMoveZ.value" label="Jets move Z" :min="jetsMoveZ.min" :max="jetsMoveZ.max" :step="jetsMoveZ.step" />
+          </div>
+          <div class="config-dialog-props__range-item">
+            <Range v-model="jetsTime.value" label="Jets time" :min="jetsTime.min" :max="jetsTime.max" :step="jetsTime.step" />
+          </div>
+          <div class="config-dialog-props__color-item">
+            <Color v-model="jetsColor" label="Jets color" />
           </div>
     
           <div class="config-dialog-props__arms-container">            

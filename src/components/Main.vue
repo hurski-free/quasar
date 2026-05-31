@@ -32,6 +32,11 @@ const modelConfig = ref<IQuasarModelConfig>({
   radiusStep: cfg.radiusStep.default,
   modelRadius: cfg.modelRadius.default,
   blackHoleDiameter: cfg.blackHoleDiameter.default,
+  jetsMoveAngle: cfg.jetsMoveAngle.default,
+  jetsMoveRadius: cfg.jetsMoveRadius.default,
+  jetsMoveZ: cfg.jetsMoveZ.default,
+  jetsTime: cfg.jetsTime.default,
+  jetsColor: cfg.jetsColor.default,
   arms: cfg.arms.default,
 });
 

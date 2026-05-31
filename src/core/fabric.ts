@@ -1,4 +1,4 @@
-import { PARTICLES_BUFFER_CAPACITY } from "./buffers.const";
+import { JETS_BUFFER_CAPACITY, PARTICLES_BUFFER_CAPACITY } from "./buffers.const";
 import { SoAEngine } from "./engine/SoAEngine";
 import type { IFrameView } from "./FrameView";
 import { Quasar } from "./Quasar";
@@ -39,11 +39,17 @@ export function createQuasar(mode: GameMode, ctx: WebGL2RenderingContext) {
 
   const gameSession = {
     quasarState: 0,
+    jetsTime: 0,
     modelConfig: {
       angleStep: 0,
       radiusStep: 0,
       modelRadius: 0,
       blackHoleDiameter: 0,
+      jetsMoveRadius: 0,
+      jetsMoveAngle: 0,
+      jetsMoveZ: 0,
+      jetsTime: 0,
+      jetsColor: [0, 0, 0],
       arms: [],
     },
   } satisfies ISession;
@@ -59,6 +65,7 @@ export function createQuasar(mode: GameMode, ctx: WebGL2RenderingContext) {
 
       return createSoAQuasar({
         particlesCapacity: PARTICLES_BUFFER_CAPACITY,
+        jetsCapacity: JETS_BUFFER_CAPACITY,
       }, soaWebgl2Renderer, frameView, gameSession);
   }
 

@@ -39,7 +39,7 @@ export class BufferSoAPool {
   private strides: number[] = [];
 
   /**
-   * @see TObjectState
+   * see {@link TObjectState}
    */
   private _states: Uint8Array;
 

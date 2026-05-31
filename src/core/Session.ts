@@ -14,6 +14,8 @@ export type TQuasarState = 0 | 1 | 2;
 export interface ISession {
   quasarState: TQuasarState;
   modelConfig: IQuasarModelConfig;
+
+  jetsTime: number;
 }
 
 export type ImmutableSession = Readonly<ISession>;

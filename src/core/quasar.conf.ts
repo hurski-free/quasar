@@ -24,6 +24,31 @@ import {
   PARTICLE_Z_DISPERSION_DEF,
   PARTICLE_ANGLE_CENTERED_POWER_DEF,
   PARTICLE_Z_CENTERED_POWER_DEF,
+  JETS_MOVE_Z_DEF,
+  JETS_MOVE_RADIUS_DEF,
+  JETS_MOVE_ANGLE_DEF,
+  JETS_MOVE_ANGLE_MIN,
+  JETS_MOVE_ANGLE_MAX,
+  JETS_MOVE_ANGLE_STEP,
+  JETS_MOVE_RADIUS_MIN,
+  JETS_MOVE_RADIUS_MAX,
+  JETS_MOVE_RADIUS_STEP,
+  JETS_MOVE_Z_MIN,
+  JETS_MOVE_Z_MAX,
+  JETS_MOVE_Z_STEP,
+  PARTICLE_Z_CENTERED_POWER_MIN,
+  PARTICLE_Z_CENTERED_POWER_MAX,
+  PARTICLE_Z_CENTERED_POWER_STEP,
+  PARTICLE_ANGLE_CENTERED_POWER_MIN,
+  PARTICLE_ANGLE_CENTERED_POWER_MAX,
+  PARTICLE_ANGLE_CENTERED_POWER_STEP,
+  PARTICLE_Z_DISPERSION_MIN,
+  PARTICLE_Z_DISPERSION_MAX,
+  PARTICLE_Z_DISPERSION_STEP,
+  JETS_TIME_DEF,
+  JETS_TIME_MIN,
+  JETS_TIME_MAX,
+  JETS_TIME_STEP,
 } from "./quasar.const";
 
 export interface IQuasarRangeProperty {
@@ -58,6 +83,12 @@ export interface IQuasarModelConfig {
   modelRadius: number;
   blackHoleDiameter: number;
 
+  jetsMoveRadius: number;
+  jetsMoveAngle: number;
+  jetsMoveZ: number;
+  jetsTime: number;
+  jetsColor: vec3;
+
   arms: IQuasarArmConfig[];
 }
 
@@ -86,6 +117,33 @@ const configurationProperties = {
     max: BLACK_HOLE_DIAMETER_MAX,
     step: BLACK_HOLE_DIAMETER_STEP,
   } as Readonly<IQuasarRangeProperty>,
+  jetsMoveAngle: {
+    default: JETS_MOVE_ANGLE_DEF,
+    min: JETS_MOVE_ANGLE_MIN,
+    max: JETS_MOVE_ANGLE_MAX,
+    step: JETS_MOVE_ANGLE_STEP,
+  } as Readonly<IQuasarRangeProperty>,
+  jetsMoveRadius: {
+    default: JETS_MOVE_RADIUS_DEF,
+    min: JETS_MOVE_RADIUS_MIN,
+    max: JETS_MOVE_RADIUS_MAX,
+    step: JETS_MOVE_RADIUS_STEP,
+  } as Readonly<IQuasarRangeProperty>,
+  jetsMoveZ: {
+    default: JETS_MOVE_Z_DEF,
+    min: JETS_MOVE_Z_MIN,
+    max: JETS_MOVE_Z_MAX,
+    step: JETS_MOVE_Z_STEP,
+  } as Readonly<IQuasarRangeProperty>,
+  jetsTime: {
+    default: JETS_TIME_DEF,
+    min: JETS_TIME_MIN,
+    max: JETS_TIME_MAX,
+    step: JETS_TIME_STEP,
+  } as Readonly<IQuasarRangeProperty>,
+  jetsColor: {
+    default: [1, 1, 1] as vec3,
+  },
   arms: {
     default: [
       {
@@ -129,21 +187,21 @@ const configurationProperties = {
     } satisfies Readonly<IQuasarRangeProperty>,
     angleCenteredPower: {
       default: PARTICLE_ANGLE_CENTERED_POWER_DEF,
-      min: 1,
-      max: 5,
-      step: 1,
+      min: PARTICLE_ANGLE_CENTERED_POWER_MIN,
+      max: PARTICLE_ANGLE_CENTERED_POWER_MAX,
+      step: PARTICLE_ANGLE_CENTERED_POWER_STEP,
     } satisfies Readonly<IQuasarRangeProperty>,
     zDispersion: {
-      default: 0,
-      min: 0,
-      max: 100,
-      step: 1,
+      default: PARTICLE_Z_DISPERSION_DEF,
+      min: PARTICLE_Z_DISPERSION_MIN,
+      max: PARTICLE_Z_DISPERSION_MAX,
+      step: PARTICLE_Z_DISPERSION_STEP,
     } satisfies Readonly<IQuasarRangeProperty>,
     zCenteredPower: {
-      default: 2,
-      min: 1,
-      max: 5,
-      step: 1,
+      default: PARTICLE_Z_CENTERED_POWER_DEF,
+      min: PARTICLE_Z_CENTERED_POWER_MIN,
+      max: PARTICLE_Z_CENTERED_POWER_MAX,
+      step: PARTICLE_Z_CENTERED_POWER_STEP,
     } satisfies Readonly<IQuasarRangeProperty>,
   },
 };

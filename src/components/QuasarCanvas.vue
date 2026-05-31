@@ -144,6 +144,10 @@ function teardownQuasar() {
   quasarRef.value = null;
 }
 
+function generateJet() {
+  quasarRef.value?.generateJet();
+}
+
 onMounted(() => {
   nextTick(() => {
     resizeObserver = new ResizeObserver(() => {
@@ -176,7 +180,7 @@ defineExpose({
 
 <template>
   <div>
-    <div ref="canvasContainerRef" class="canvas-container">
+    <div ref="canvasContainerRef" class="canvas-container" @click="generateJet">
       <canvas ref="canvasRef" />
     </div>
     <div v-if="!webgl2Supported" class="webgl2-not-supported">
