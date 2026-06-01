@@ -70,11 +70,11 @@ export class Quasar<W extends World> {
     this._prevTimestamp = now;
 
     if (deltaTime <= 200) {
-      this.engine.process(this.world, this.session);
+      this.engine.process(this.world, this.session, deltaTime);
       this.renderer.render(this.world, this.frameView, this.session);
 
       if (this.session.jetsTime > 0) {
-        this.session.jetsTime--;
+        this.session.jetsTime -= deltaTime;
       }
     }
 

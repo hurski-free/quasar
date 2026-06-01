@@ -2,7 +2,10 @@ import type { ImmutableSession } from "../Session";
 import type { World } from "../world";
 
 export interface IEngine<W extends World>  {
-  process(world: W, session: ImmutableSession): void;
+  /**
+   * @param deltaTime milliseconds
+   */
+  process(world: W, session: ImmutableSession, deltaTime: number): void;
 
   /**
    * generate initial data for the world

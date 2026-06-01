@@ -1,7 +1,7 @@
 import { JETS_CPU_VALUES_PER_ELEMENT, JETS_GPU_VALUES_PER_ELEMENT, PARTICLES_CPU_VALUES_PER_ELEMENT, PARTICLES_FLAGS_VALUES_PER_ELEMENT, PARTICLES_GPU_VALUES_PER_ELEMENT } from "../buffers.const";
 import { PI_MUL_TWO, random, randomBiased, randomCentered } from "../math/math";
 import type { IQuasarArmConfig } from "../quasar.conf";
-import { JETS_EL_GENERATE, JETS_START_X, PARTICLE_DIAMETER_MAX_DEF, PARTICLE_DIAMETER_MIN_DEF, QUANTITY_EL_GENERATE } from "../quasar.const";
+import { JETS_EL_GENERATE, JETS_SPAWN_INTERVAL, JETS_START_X, PARTICLE_DIAMETER_MAX_DEF, PARTICLE_DIAMETER_MIN_DEF, QUANTITY_EL_GENERATE } from "../quasar.const";
 import type { ImmutableSession } from "../Session";
 import type { SoAWorld } from "../world/SoAWorld";
 import type { IEngine } from "./IEngine";
@@ -10,7 +10,11 @@ export class SoAEngine implements IEngine<SoAWorld>  {
   private respawnIndices: number[] = [];
   private respawnCount: number = 0;
 
-  process(world: SoAWorld, session: ImmutableSession): void {
+  private jetSpawnAccumulator: number = 0;
+
+  process(world: SoAWorld, session: ImmutableSession, deltaTime: number): void {
+    const dt = deltaTime / 1000; // ms to s, smooth movement on different Hz
+
     this.respawnCount = 0;
 
     const particlesGpuData = world.particlesGpuData;
@@ -19,24 +23,23 @@ export class SoAEngine implements IEngine<SoAWorld>  {
 
     const radiusStep = session.modelConfig.radiusStep;
     const angleStep = session.modelConfig.angleStep;
-    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2 * 1.3; // 1.3 coefficient increase in shader
+    const blackHoleRadiusSq = blackHoleRadius * blackHoleRadius;
     const jetsMoveRadius = session.modelConfig.jetsMoveRadius;
 
     for (let i = 0; i < count; i++) {
       const base = PARTICLES_GPU_VALUES_PER_ELEMENT * i;
       const cpuBase = PARTICLES_CPU_VALUES_PER_ELEMENT * i;
 
-      if (this.isInsideBlackHole(particlesGpuData, base, blackHoleRadius)) {
+      if (this.isInsideBlackHole(particlesGpuData, base, blackHoleRadiusSq)) {
         this.respawnIndices[this.respawnCount++] = i;
         continue;
       }
 
-      const polarR = particlesGpuData[base] - radiusStep;
+      particlesGpuData[base] -= radiusStep * dt;
+      particlesGpuData[base + 1] += angleStep * dt;
 
-      particlesGpuData[base] = polarR;
-      particlesGpuData[base + 1] += angleStep;
-
-      particlesGpuData[base + 2] -= particlesCpuData[cpuBase + 1] * particlesCpuData[cpuBase]; // +zStep
+      particlesGpuData[base + 2] -= particlesCpuData[cpuBase + 1] * particlesCpuData[cpuBase] * dt; // -sign * zStep
     }
 
     const jetsGpuData = world.jetsGpuData;
@@ -47,11 +50,11 @@ export class SoAEngine implements IEngine<SoAWorld>  {
       const base = JETS_GPU_VALUES_PER_ELEMENT * i;
       const cpuBase = JETS_CPU_VALUES_PER_ELEMENT * i;
 
-      jetsGpuData[base] += jetsMoveRadius; // move x
-      jetsGpuData[base + 1] += jetsCpuData[cpuBase + 1]; // move angle
-      jetsGpuData[base + 2] += jetsCpuData[cpuBase + 2]; // move z
+      jetsGpuData[base] += jetsMoveRadius * dt; // move x
+      jetsGpuData[base + 1] += jetsCpuData[cpuBase + 1] * dt; // move angle
+      jetsGpuData[base + 2] += jetsCpuData[cpuBase + 2] * dt; // move z
 
-      jetsCpuData[cpuBase] -= 1; // lifetime
+      jetsCpuData[cpuBase] -= deltaTime; // lifetime
 
       if (jetsCpuData[cpuBase] <= 0) {
         world.jetsPool.states[i] = 3;
@@ -61,26 +64,31 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     this.respawnAbsorbedParticles(particlesGpuData, world.particlesCpuData, world.particlesFlagsData, session);
 
     if (session.jetsTime > 0) {
-      this.generateJet(world, session);
+      this.jetSpawnAccumulator += dt;
+
+      if (this.jetSpawnAccumulator >= JETS_SPAWN_INTERVAL) {
+        this.generateJet(world, session);
+        this.jetSpawnAccumulator = 0;
+      }
     }
 
     // remove expired jets particles
     world.jetsPool.swapAndPop();
   }
 
-  isInsideBlackHole(particlesGpuData: Float32Array, particleBase: number, blackHoleRadius: number): boolean {
+  private isInsideBlackHole(particlesGpuData: Float32Array, particleBase: number, blackHoleRadiusSq: number): boolean {
     const x = particlesGpuData[particleBase]; // polarR
     const z = particlesGpuData[particleBase + 2]; // z
 
-    return x * x + z * z < blackHoleRadius * blackHoleRadius; // check sphere
+    return x * x + z * z < blackHoleRadiusSq; // check sphere
   }
 
-  respawnAbsorbedParticles(gpuData: Float32Array, cpuData: Float32Array, flagsData: Int32Array, session: ImmutableSession) {
+  private respawnAbsorbedParticles(gpuData: Float32Array, cpuData: Float32Array, flagsData: Int32Array, session: ImmutableSession) {
     const { modelRadius, arms } = session.modelConfig;
 
     const radiusStep = session.modelConfig.radiusStep;
     const countStep = modelRadius / radiusStep;
-    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2 * 1.3; // 1.3 coefficient increase in shader
 
     for (let i = 0; i < this.respawnCount; i++) {
       const particleIndex = this.respawnIndices[i];
@@ -123,7 +131,7 @@ export class SoAEngine implements IEngine<SoAWorld>  {
       gpuData[gpuBase + 5] = color[1];
       gpuData[gpuBase + 6] = color[2];
 
-      cpuData[cpuBase] = Math.sign(z) * minZ;
+      cpuData[cpuBase] = Math.sign(z);
       cpuData[cpuBase + 1] = zStep;
     }
   }
@@ -156,7 +164,7 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     const angleStep = session.modelConfig.angleStep;
     const radiusStep = session.modelConfig.radiusStep;
     const modelRadius = session.modelConfig.modelRadius;
-    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2 * 1.3; // 1.3 coefficient increase in shader
 
     const { angle, color } = arm;
   
@@ -210,7 +218,7 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     const jetsCpuData = world.jetsCpuData;
 
     const jetsMoveAngle = session.modelConfig.jetsMoveAngle;
-    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2;
+    const blackHoleRadius = session.modelConfig.blackHoleDiameter / 2 * 1.3; // 1.3 coefficient increase in shader
     const jetsMoveZ = session.modelConfig.jetsMoveZ;
     const jetsLifeTime = session.modelConfig.jetsTime;
     const jetsColor = session.modelConfig.jetsColor;
@@ -218,9 +226,9 @@ export class SoAEngine implements IEngine<SoAWorld>  {
     for (let i = 0; i < JETS_EL_GENERATE; i++) {
       const jetMinusId = jetsPool.getNewObject();
       
-      jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT] = JETS_START_X;
+      jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT] = JETS_START_X + random(0, 3);
       jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT + 1] = randomCentered(0, PI_MUL_TWO, 3);
-      jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT + 2] = -blackHoleRadius * 1.35 + random(0, 3);
+      jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT + 2] = -blackHoleRadius * 1.1 + randomCentered(0, 10, 3);
       jetsGpuData[jetMinusId * JETS_GPU_VALUES_PER_ELEMENT + 3] = random(1, 2.2);
       
       // color [R, G, B]
@@ -237,9 +245,9 @@ export class SoAEngine implements IEngine<SoAWorld>  {
 
       const jetPlusId = jetsPool.getNewObject();
       
-      jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT] = JETS_START_X;
+      jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT] = JETS_START_X + random(0, 3);
       jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT + 1] = randomCentered(0, PI_MUL_TWO, 3);
-      jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT + 2] = blackHoleRadius * 1.35 + random(0, 3);
+      jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT + 2] = blackHoleRadius * 1.1 + randomCentered(0, 10, 3);
       jetsGpuData[jetPlusId * JETS_GPU_VALUES_PER_ELEMENT + 3] = random(1, 2.2);
       
       // color [R, G, B]

@@ -39,15 +39,15 @@ export const PARTICLE_GENERATE_STEP_MIN = 0.005;
 export const PARTICLE_GENERATE_STEP_MAX = 0.5;
 export const PARTICLE_GENERATE_STEP_STEP = 0.005;
 
-export const PARTICLE_MOVE_ANGLE_DEF = 0.00025;
-export const PARTICLE_MOVE_ANGLE_MIN = 0.00005;
-export const PARTICLE_MOVE_ANGLE_MAX = 0.001;
-export const PARTICLE_MOVE_ANGLE_STEP = 0.00005;
+export const PARTICLE_MOVE_ANGLE_DEF = 0.05;
+export const PARTICLE_MOVE_ANGLE_MIN = 0.005;
+export const PARTICLE_MOVE_ANGLE_MAX = 0.1;
+export const PARTICLE_MOVE_ANGLE_STEP = 0.005;
 
-export const PARTICLE_MOVE_RADIUS_DEF = 0.02;
-export const PARTICLE_MOVE_RADIUS_MIN = 0.001;
-export const PARTICLE_MOVE_RADIUS_MAX = 0.1;
-export const PARTICLE_MOVE_RADIUS_STEP = 0.001;
+export const PARTICLE_MOVE_RADIUS_DEF = 5;
+export const PARTICLE_MOVE_RADIUS_MIN = 1;
+export const PARTICLE_MOVE_RADIUS_MAX = 10;
+export const PARTICLE_MOVE_RADIUS_STEP = 0.5;
 
 export const PARTICLE_DIAMETER_MIN_DEF = 1.0;
 export const PARTICLE_DIAMETER_MIN_MIN = 0.5;
@@ -73,25 +73,27 @@ export const INIT_ANGLE_Z = 0;
 
 // jets constants
 
-export const JETS_TIME_DEF = 1000;
-export const JETS_TIME_MIN = 500;
-export const JETS_TIME_MAX = 1500;
-export const JETS_TIME_STEP = 100;
+export const JETS_TIME_DEF = 10000;
+export const JETS_TIME_MIN = 5000;
+export const JETS_TIME_MAX = 15000;
+export const JETS_TIME_STEP = 1000;
 
 export const JETS_START_X = 5;
-export const JETS_EL_GENERATE = 18;
+export const JETS_EL_GENERATE = 36;
 
-export const JETS_MOVE_ANGLE_DEF = 0.05;
-export const JETS_MOVE_ANGLE_MIN = 0.01;
-export const JETS_MOVE_ANGLE_MAX = 0.1;
-export const JETS_MOVE_ANGLE_STEP = 0.01;
+export const JETS_MOVE_ANGLE_DEF = 10;
+export const JETS_MOVE_ANGLE_MIN = 2;
+export const JETS_MOVE_ANGLE_MAX = 25;
+export const JETS_MOVE_ANGLE_STEP = 1;
 
-export const JETS_MOVE_RADIUS_DEF = 0.5;
-export const JETS_MOVE_RADIUS_MIN = 0.1;
-export const JETS_MOVE_RADIUS_MAX = 1.0;
-export const JETS_MOVE_RADIUS_STEP = 0.1;
+export const JETS_MOVE_RADIUS_DEF = 100.0;
+export const JETS_MOVE_RADIUS_MIN = 50.0;
+export const JETS_MOVE_RADIUS_MAX = 200.0;
+export const JETS_MOVE_RADIUS_STEP = 10;
 
-export const JETS_MOVE_Z_DEF = 6.0;
-export const JETS_MOVE_Z_MIN = 2.0;
-export const JETS_MOVE_Z_MAX = 8.0;
-export const JETS_MOVE_Z_STEP = 0.5;
+export const JETS_MOVE_Z_DEF = 1000.0;
+export const JETS_MOVE_Z_MIN = 500.0;
+export const JETS_MOVE_Z_MAX = 2000.0;
+export const JETS_MOVE_Z_STEP = 100;
+
+export const JETS_SPAWN_INTERVAL = 1 / 50; // 50 Hz
